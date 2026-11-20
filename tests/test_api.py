@@ -150,3 +150,60 @@ def test_model_prediction_requires_training_artifact():
         files={"file": ("sensor.csv", "aa_000\n1\n", "text/csv")},
     )
     assert response.status_code == 503
+
+
+def test_assistant_uses_signed_in_users_maintenance_history():
+    token = create_user()
+    headers = auth(token)
+    vehicle = client.post(
+        "/api/vehicles",
+        headers=headers,
+        json={
+            "vehicle_name": "Assistant Truck",
+            "registration": f"KA{uuid.uuid4().hex[:8].upper()}",
+            "vehicle_type": "Commercial truck",
+            "make_model": "Test Model",
+            "odometer": 22000,
+        },
+    )
+    vehicle_id = vehicle.json()["id"]
+    client.post(
+        "/api/work-orders",
+        headers=headers,
+        json={
+            "vehicle_id": vehicle_id,
+            "title": "Replace worn brake pads",
+            "priority": "High",
+            "description": "Workshop repair record",
+        },
+    )
+    response = client.post(
+        "/api/assistant/chat",
+        headers=headers,
+        json={"message": "What was my previous repair?", "vehicle_id": vehicle_id},
+    )
+    assert response.status_code == 200
+    assert "Replace worn brake pads" in response.json()["answer"]
+    assert response.json()["records_used"]["work_orders"] == 1
+
+
+def test_assistant_rejects_another_users_vehicle_context():
+    owner_token = create_user()
+    other_token = create_user()
+    vehicle = client.post(
+        "/api/vehicles",
+        headers=auth(owner_token),
+        json={
+            "vehicle_name": "Private Truck",
+            "registration": f"KA{uuid.uuid4().hex[:8].upper()}",
+            "vehicle_type": "Commercial truck",
+            "make_model": "Private Model",
+            "odometer": 1000,
+        },
+    )
+    response = client.post(
+        "/api/assistant/chat",
+        headers=auth(other_token),
+        json={"message": "What was my last repair?", "vehicle_id": vehicle.json()["id"]},
+    )
+    assert response.status_code == 404
