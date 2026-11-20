@@ -45,17 +45,17 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 
 ## Important model and safety disclosures
 
-- **EngineGuard is not yet a trained engine-failure predictor.** The interface describes a future modelling workflow; no engine failure risk score or validated model accuracy is currently produced.
+- **EngineGuard supports a reproducible Scania APS model workflow.** Train it locally using the official dataset and `docs/MODEL_TRAINING.md`. The repository does not include the large raw dataset or a pre-trained model, so predictions remain unavailable until you download the data and train the model.
 - **TyreGuard is rule-based, not machine learning.** It flags readings against supplied manufacturer pressure limits and demonstration temperature indicators. These thresholds are not universal safety limits.
 - **Tyre image inspection is preview-only.** No computer-vision classifier is currently connected.
-- CSV upload checks file structure and previews rows. It does not train a model or infer failure labels.
+- CSV upload checks file structure and previews rows. It does not train a model. The EngineGuard prediction upload uses the trained Scania model only after the training step is completed.
 - This is a software demonstration and decision-support MVP, not a substitute for professional vehicle inspection or OEM guidance.
 
-## API routes
+## Machine-learning setup\n\nInstall `requirements-ml.txt`, download the official UCI APS training CSV to `data/raw/aps_failure_training_set.csv`, then run `python train_model.py`. See [docs/MODEL_TRAINING.md](docs/MODEL_TRAINING.md) for the complete steps and limitations.\n\n## API routes
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
 - `GET/POST/DELETE /api/vehicles`
-- `POST /api/tyres/screen`, `GET /api/tyres/history`
+- `POST /api/tyres/screen`, `GET /api/tyres/history`\n- `GET /api/model/status`, `POST /api/model/predict`, `GET /api/model/history`
 - `POST /api/data/preview`
 - `GET/POST/PATCH /api/work-orders`
 - `GET /api/dashboard/summary`
