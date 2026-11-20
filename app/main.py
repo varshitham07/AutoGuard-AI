@@ -312,8 +312,12 @@ def assistant_chat(body: AssistantChatIn, user=Depends(current_user)):
             vehicles = [dict(vehicle)]
         else:
             vehicles = [dict(r) for r in c.execute("SELECT id,vehicle_name,vehicle_type,make_model,odometer FROM vehicles WHERE user_id=? ORDER BY id DESC LIMIT 10", (user["id"],))]
-        orders = [dict(r) for r in c.execute("SELECT title,priority,description,status,created_at,vehicle_id FROM work_orders WHERE user_id=? ORDER BY id DESC LIMIT 12", (user["id"],))]
-        checks = [dict(r) for r in c.execute("SELECT tyre_position,pressure_psi,temperature_c,status,flags_json,recommendations_json,created_at,vehicle_id FROM tyre_checks WHERE user_id=? ORDER BY id DESC LIMIT 10", (user["id"],))]
+        if body.vehicle_id is not None:
+            orders = [dict(r) for r in c.execute("SELECT title,priority,description,status,created_at,vehicle_id FROM work_orders WHERE user_id=? AND vehicle_id=? ORDER BY id DESC LIMIT 12", (user["id"], body.vehicle_id))]
+            checks = [dict(r) for r in c.execute("SELECT tyre_position,pressure_psi,temperature_c,status,flags_json,recommendations_json,created_at,vehicle_id FROM tyre_checks WHERE user_id=? AND vehicle_id=? ORDER BY id DESC LIMIT 10", (user["id"], body.vehicle_id))]
+        else:
+            orders = [dict(r) for r in c.execute("SELECT title,priority,description,status,created_at,vehicle_id FROM work_orders WHERE user_id=? ORDER BY id DESC LIMIT 12", (user["id"],))]
+            checks = [dict(r) for r in c.execute("SELECT tyre_position,pressure_psi,temperature_c,status,flags_json,recommendations_json,created_at,vehicle_id FROM tyre_checks WHERE user_id=? ORDER BY id DESC LIMIT 10", (user["id"],))]
     context = {"vehicles":vehicles,"recent_work_orders":orders,"recent_tyre_checks":checks}
     question = body.message.strip()
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
