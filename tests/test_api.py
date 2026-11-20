@@ -207,3 +207,66 @@ def test_assistant_rejects_another_users_vehicle_context():
         json={"message": "What was my last repair?", "vehicle_id": vehicle.json()["id"]},
     )
     assert response.status_code == 404
+
+
+def test_service_record_costs_and_due_reminder():
+    token = create_user()
+    headers = auth(token)
+    vehicle = client.post(
+        "/api/vehicles",
+        headers=headers,
+        json={
+            "vehicle_name": "Service Test Truck",
+            "registration": f"KA{uuid.uuid4().hex[:8].upper()}",
+            "vehicle_type": "Commercial truck",
+            "make_model": "Test Model",
+            "odometer": 52000,
+        },
+    )
+    response = client.post(
+        "/api/service-records",
+        headers=headers,
+        json={
+            "vehicle_id": vehicle.json()["id"],
+            "service_date": "2026-10-01",
+            "service_type": "Engine oil and filter",
+            "odometer": 50000,
+            "description": "Oil and filter changed",
+            "parts_cost": 1800,
+            "labour_cost": 700,
+            "next_service_date": "2026-10-15",
+            "next_service_odometer": 51000,
+        },
+    )
+    assert response.status_code == 200
+    rows = client.get("/api/service-records", headers=headers)
+    assert rows.status_code == 200
+    assert rows.json()[0]["total_cost"] == 2500
+    assert rows.json()[0]["service_status"] == "Due / overdue"
+
+
+def test_service_records_are_account_scoped():
+    owner_token = create_user()
+    other_token = create_user()
+    vehicle = client.post(
+        "/api/vehicles",
+        headers=auth(owner_token),
+        json={
+            "vehicle_name": "Private Service Vehicle",
+            "registration": f"KA{uuid.uuid4().hex[:8].upper()}",
+            "vehicle_type": "Passenger car",
+            "make_model": "Private",
+            "odometer": 1000,
+        },
+    )
+    response = client.post(
+        "/api/service-records",
+        headers=auth(other_token),
+        json={
+            "vehicle_id": vehicle.json()["id"],
+            "service_date": "2026-10-01",
+            "service_type": "General service",
+            "odometer": 1000,
+        },
+    )
+    assert response.status_code == 404
