@@ -26,12 +26,14 @@ python train_model.py
 The script:
 - checks that the original target and 170 operational feature columns exist;
 - parses `na` as missing and applies median imputation;
-- uses a stratified 80/20 train/validation split with a fixed random seed;
+- uses a stratified 70/15/15 split for model fitting, threshold calibration and final testing;
 - trains a gradient-boosting classifier with positive-class sample weighting;
-- chooses a validation threshold on the model score by the published challenge cost matrix (false positive = 10; false negative = 500);
-- reports precision, recall, F1, PR-AUC, ROC-AUC, confusion matrix and challenge cost.
+- selects the operating threshold on the calibration partition using the published challenge cost matrix (false positive = 10; false negative = 500);
+- reports precision, recall, F1, PR-AUC, ROC-AUC, confusion matrix and challenge cost on the untouched test partition.
 
-It writes the trained artifact and measured metrics to `app/models/`. Those generated files are ignored by Git. **Do not report metrics until training has completed successfully on the downloaded dataset.**
+Separating threshold calibration from final testing avoids reporting performance on the same records used to tune the decision threshold. The final metrics are still an internal hold-out estimate, not an independent fleet trial.
+
+The trained artifact and measured metrics are written to `app/models/`. Those generated files are ignored by Git. **Do not report metrics until training has completed successfully on the downloaded dataset.**
 
 ## 4. Run the application
 
