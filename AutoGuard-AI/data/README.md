@@ -1,0 +1,2 @@
+# Data policy
+Do not commit large raw datasets or personal/vehicle-identifying telemetry to this repository. Obtain datasets from their official sources, check licence and terms, document source DOI/version, preserve original units, and record preprocessing steps. Do not mix synthetic/sample data with real measured data without explicit labels. Keep a held-out evaluation split and prevent leakage across vehicle IDs/time windows.
