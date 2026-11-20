@@ -270,3 +270,30 @@ def test_service_records_are_account_scoped():
         },
     )
     assert response.status_code == 404
+
+
+def test_vehicle_odometer_can_only_move_forward():
+    token = create_user()
+    headers = auth(token)
+    vehicle = client.post(
+        "/api/vehicles",
+        headers=headers,
+        json={
+            "vehicle_name": "Mileage Truck",
+            "registration": f"KA{uuid.uuid4().hex[:8].upper()}",
+            "vehicle_type": "Commercial truck",
+            "make_model": "Test Model",
+            "odometer": 25000,
+        },
+    )
+    vehicle_id = vehicle.json()["id"]
+    updated = client.patch(
+        f"/api/vehicles/{vehicle_id}/odometer?odometer=27500",
+        headers=headers,
+    )
+    assert updated.status_code == 200
+    rejected = client.patch(
+        f"/api/vehicles/{vehicle_id}/odometer?odometer=26000",
+        headers=headers,
+    )
+    assert rejected.status_code == 400
