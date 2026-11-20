@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from pathlib import Path
 import sqlite3, os, hashlib, hmac, secrets, time, base64, json, csv, io
+from datetime import date
 
 BASE = Path(__file__).resolve().parent.parent
 DB_PATH = os.getenv("DATABASE_PATH", str(BASE / "autoguard.db"))
@@ -25,6 +26,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_id INTEGER, title TEXT NOT NULL, priority TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'Open', created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
         CREATE TABLE IF NOT EXISTS tyre_checks(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), vehicle_id INTEGER, tyre_position TEXT NOT NULL, pressure_psi REAL NOT NULL, temperature_c REAL NOT NULL, speed_kmh REAL NOT NULL DEFAULT 0, status TEXT NOT NULL, flags_json TEXT NOT NULL, recommendations_json TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
         CREATE TABLE IF NOT EXISTS model_predictions(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), filename TEXT NOT NULL, row_count INTEGER NOT NULL, flagged_count INTEGER NOT NULL, results_json TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS service_records(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), vehicle_id INTEGER NOT NULL REFERENCES vehicles(id), service_date TEXT NOT NULL, service_type TEXT NOT NULL, odometer REAL NOT NULL, description TEXT DEFAULT '', parts_cost REAL NOT NULL DEFAULT 0, labour_cost REAL NOT NULL DEFAULT 0, next_service_date TEXT, next_service_odometer REAL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         """)
         # Upgrade databases created by earlier MVP versions without deleting existing records.
         vehicle_cols = {r["name"] for r in c.execute("PRAGMA table_info(vehicles)")}
@@ -96,6 +98,17 @@ class WorkOrderIn(BaseModel):
 class AssistantChatIn(BaseModel):
     message: str = Field(min_length=2, max_length=2000)
     vehicle_id: Optional[int] = None
+
+class ServiceRecordIn(BaseModel):
+    vehicle_id: int
+    service_date: date
+    service_type: str = Field(min_length=2, max_length=80)
+    odometer: float = Field(ge=0)
+    description: str = Field(default="", max_length=1000)
+    parts_cost: float = Field(default=0, ge=0)
+    labour_cost: float = Field(default=0, ge=0)
+    next_service_date: Optional[date] = None
+    next_service_odometer: Optional[float] = Field(default=None, ge=0)
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -386,3 +399,39 @@ def assistant_chat(body: AssistantChatIn, user=Depends(current_user)):
     if vehicles:
         answer += "\n\nVehicles in your workspace: " + "; ".join(f"{v['vehicle_name']} ({v['make_model'] or v['vehicle_type']}, {v['odometer']} km)" for v in vehicles[:3]) + "."
     return {"answer":answer,"mode":"built_in_guidance","model":None,"records_used":{"vehicles":len(vehicles),"work_orders":len(orders),"tyre_checks":len(checks)},"note":"Connect an OpenAI API key on the backend to enable generative conversations. This built-in mode uses limited topic guidance and saved records."}
+
+
+@app.get("/api/service-records")
+def list_service_records(user=Depends(current_user), limit:int=100):
+    limit = max(1, min(limit, 200))
+    today = date.today().isoformat()
+    with db() as c:
+        rows = [dict(r) for r in c.execute(
+            "SELECT s.*,v.vehicle_name,v.registration,v.odometer AS current_odometer,v.make_model FROM service_records s JOIN vehicles v ON v.id=s.vehicle_id WHERE s.user_id=? ORDER BY s.service_date DESC,s.id DESC LIMIT ?",
+            (user["id"],limit)
+        )]
+    for row in rows:
+        due_date = row.get("next_service_date")
+        due_km = row.get("next_service_odometer")
+        overdue_date = bool(due_date and due_date <= today)
+        overdue_km = bool(due_km is not None and row["current_odometer"] >= due_km)
+        row["service_status"] = "Due / overdue" if overdue_date or overdue_km else ("Scheduled" if due_date or due_km is not None else "Logged")
+        row["total_cost"] = round(float(row["parts_cost"]) + float(row["labour_cost"]), 2)
+    return rows
+
+@app.post("/api/service-records")
+def create_service_record(body:ServiceRecordIn,user=Depends(current_user)):
+    if body.next_service_date and body.next_service_date < body.service_date:
+        raise HTTPException(400,"Next service date cannot be earlier than the recorded service date")
+    with db() as c:
+        vehicle = c.execute("SELECT id,odometer FROM vehicles WHERE id=? AND user_id=?",(body.vehicle_id,user["id"])).fetchone()
+        if not vehicle:
+            raise HTTPException(404,"Vehicle not found in your workspace")
+        if body.odometer < 0:
+            raise HTTPException(400,"Odometer cannot be negative")
+        cur = c.execute(
+            "INSERT INTO service_records(user_id,vehicle_id,service_date,service_type,odometer,description,parts_cost,labour_cost,next_service_date,next_service_odometer) VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (user["id"],body.vehicle_id,body.service_date.isoformat(),body.service_type.strip(),body.odometer,body.description,body.parts_cost,body.labour_cost,body.next_service_date.isoformat() if body.next_service_date else None,body.next_service_odometer)
+        )
+        row = c.execute("SELECT * FROM service_records WHERE id=?",(cur.lastrowid,)).fetchone()
+    return {**dict(row),"total_cost":round(body.parts_cost+body.labour_cost,2),"service_status":"Scheduled" if body.next_service_date or body.next_service_odometer is not None else "Logged"}
