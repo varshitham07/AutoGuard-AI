@@ -124,7 +124,7 @@ async function api(path,opts={}){
   if(row.odometer<0||row.parts_cost<0||row.labour_cost<0)throw Error('Mileage and costs cannot be negative');
   d.serviceRecords.push(row);saveDemo(d);return {...row,vehicle_name:v.vehicle_name,registration:v.registration,total_cost:row.parts_cost+row.labour_cost,service_status:'Logged'};
  }
- const odo=path.match(/^\\/api\\/vehicles\\/(\\d+)\\/odometer\\?odometer=(\\d+(?:\\.\\d+)?)$/);
+ const odo=path.match(/^\/api\/vehicles\/(\d+)\/odometer\?odometer=(\d+(?:\.\d+)?)$/);
  if(odo&&method==='PATCH'){
   const v=d.vehicles.find(x=>x.id===Number(odo[1]));if(!v)throw Error('Vehicle not found');
   const km=Number(odo[2]);if(!Number.isFinite(km)||km<Number(v.odometer||0))throw Error('Odometer must be a valid reading equal to or greater than the saved value');
