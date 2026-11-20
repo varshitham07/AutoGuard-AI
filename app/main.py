@@ -23,6 +23,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin', created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS vehicles(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_name TEXT NOT NULL, registration TEXT UNIQUE NOT NULL, vehicle_type TEXT NOT NULL, make_model TEXT DEFAULT '', odometer REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_id INTEGER, title TEXT NOT NULL, priority TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'Open', created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
+        CREATE TABLE IF NOT EXISTS tyre_checks(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), vehicle_id INTEGER, tyre_position TEXT NOT NULL, pressure_psi REAL NOT NULL, temperature_c REAL NOT NULL, speed_kmh REAL NOT NULL DEFAULT 0, status TEXT NOT NULL, flags_json TEXT NOT NULL, recommendations_json TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
         """)
         # Upgrade databases created by earlier MVP versions without deleting existing records.
         vehicle_cols = {r["name"] for r in c.execute("PRAGMA table_info(vehicles)")}
@@ -158,6 +159,8 @@ def screen_tyre(body:ScreenIn,user=Depends(current_user)):
             owned = c.execute("SELECT 1 FROM vehicles WHERE id=? AND user_id=?", (body.vehicle_id,user["id"])).fetchone()
         if not owned: raise HTTPException(404, "Vehicle not found in your workspace")
     flags=[]; advice=[]
+    if body.manufacturer_min_psi is not None and body.manufacturer_max_psi is not None and body.manufacturer_min_psi > body.manufacturer_max_psi:
+        raise HTTPException(400, "OEM minimum pressure cannot exceed OEM maximum pressure")
     if body.manufacturer_min_psi is not None and body.pressure_psi < body.manufacturer_min_psi:
         flags.append("Pressure below supplied manufacturer minimum"); advice.append("Arrange a safe pressure check and inspect for leakage.")
     if body.manufacturer_max_psi is not None and body.pressure_psi > body.manufacturer_max_psi:
@@ -169,7 +172,26 @@ def screen_tyre(body:ScreenIn,user=Depends(current_user)):
     if body.pressure_psi <= 0: flags.append("Invalid pressure reading")
     status = "Inspection required" if flags else "No rule-based warning"
     if not flags: advice.append("Continue routine monitoring and compare with vehicle-specific manufacturer guidance.")
+    with db() as c:
+        c.execute(
+            "INSERT INTO tyre_checks(user_id,vehicle_id,tyre_position,pressure_psi,temperature_c,speed_kmh,status,flags_json,recommendations_json) VALUES(?,?,?,?,?,?,?,?,?)",
+            (user["id"], body.vehicle_id, body.tyre_position, body.pressure_psi, body.temperature_c, body.speed_kmh, status, json.dumps(flags), json.dumps(advice))
+        )
     return {"status":status,"flags":flags,"recommendations":advice,"evidence":{"tyre_position":body.tyre_position,"pressure_psi":body.pressure_psi,"temperature_c":body.temperature_c,"speed_kmh":body.speed_kmh},"method":"Transparent rule-based screening","disclaimer":"Demonstration thresholds are not universal safety limits. Configure using OEM and tyre-maker specifications. This screening cannot predict or rule out sudden tyre failure."}
+
+@app.get("/api/tyres/history")
+def tyre_history(user=Depends(current_user), limit:int=50):
+    limit = max(1, min(limit, 100))
+    with db() as c:
+        rows = c.execute(
+            "SELECT t.*, v.registration FROM tyre_checks t LEFT JOIN vehicles v ON v.id=t.vehicle_id WHERE t.user_id=? ORDER BY t.id DESC LIMIT ?",
+            (user["id"], limit)
+        ).fetchall()
+    return [{
+        **dict(r),
+        "flags": json.loads(r["flags_json"]),
+        "recommendations": json.loads(r["recommendations_json"])
+    } for r in rows]
 
 @app.post("/api/data/preview")
 async def preview_csv(file:UploadFile=File(...), user=Depends(current_user)):
