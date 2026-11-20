@@ -47,7 +47,7 @@ def predict_frame(frame):
     return [
         {
             "row": index + 1,
-            "aps_failure_probability": round(float(probability), 6),
+            "aps_risk_score": round(float(probability), 6),
             "threshold": round(threshold, 6),
             "prediction": "APS failure risk — inspection recommended" if probability >= threshold else "No APS alert at selected threshold",
             "flagged": bool(probability >= threshold),
