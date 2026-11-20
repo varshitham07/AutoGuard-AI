@@ -21,9 +21,16 @@ def init_db():
     with db() as c:
         c.executescript("""
         CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin', created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS vehicles(id INTEGER PRIMARY KEY, vehicle_name TEXT NOT NULL, registration TEXT UNIQUE NOT NULL, vehicle_type TEXT NOT NULL, make_model TEXT DEFAULT '', odometer REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, vehicle_id INTEGER, title TEXT NOT NULL, priority TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'Open', created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
+        CREATE TABLE IF NOT EXISTS vehicles(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_name TEXT NOT NULL, registration TEXT UNIQUE NOT NULL, vehicle_type TEXT NOT NULL, make_model TEXT DEFAULT '', odometer REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_id INTEGER, title TEXT NOT NULL, priority TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'Open', created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
         """)
+        # Upgrade databases created by earlier MVP versions without deleting existing records.
+        vehicle_cols = {r["name"] for r in c.execute("PRAGMA table_info(vehicles)")}
+        if "user_id" not in vehicle_cols:
+            c.execute("ALTER TABLE vehicles ADD COLUMN user_id INTEGER REFERENCES users(id)")
+        order_cols = {r["name"] for r in c.execute("PRAGMA table_info(work_orders)")}
+        if "user_id" not in order_cols:
+            c.execute("ALTER TABLE work_orders ADD COLUMN user_id INTEGER REFERENCES users(id)")
 init_db()
 
 def hash_pw(password, salt=None):
@@ -120,32 +127,36 @@ def me(user=Depends(current_user)): return {"user":user}
 @app.get("/api/dashboard/summary")
 def summary(user=Depends(current_user)):
     with db() as c:
-        vehicles = c.execute("SELECT COUNT(*) FROM vehicles").fetchone()[0]
-        orders = c.execute("SELECT COUNT(*) FROM work_orders WHERE status!='Completed'").fetchone()[0]
-        open_orders = [dict(r) for r in c.execute("SELECT w.*,v.registration FROM work_orders w LEFT JOIN vehicles v ON v.id=w.vehicle_id ORDER BY w.id DESC LIMIT 5")]
+        vehicles = c.execute("SELECT COUNT(*) FROM vehicles WHERE user_id=?", (user["id"],)).fetchone()[0]
+        orders = c.execute("SELECT COUNT(*) FROM work_orders WHERE user_id=? AND status!='Completed'", (user["id"],)).fetchone()[0]
+        open_orders = [dict(r) for r in c.execute("SELECT w.*,v.registration FROM work_orders w LEFT JOIN vehicles v ON v.id=w.vehicle_id WHERE w.user_id=? ORDER BY w.id DESC LIMIT 5", (user["id"],))]
     return {"vehicles":vehicles,"open_work_orders":orders,"model_status":"Validation pending","recent_work_orders":open_orders}
 
 @app.get("/api/vehicles")
 def list_vehicles(user=Depends(current_user)):
-    with db() as c: return [dict(r) for r in c.execute("SELECT * FROM vehicles ORDER BY id DESC")]
+    with db() as c: return [dict(r) for r in c.execute("SELECT * FROM vehicles WHERE user_id=? ORDER BY id DESC", (user["id"],))]
 @app.post("/api/vehicles")
 def add_vehicle(body: VehicleIn, user=Depends(current_user)):
     try:
         with db() as c:
-            cur=c.execute("INSERT INTO vehicles(vehicle_name,registration,vehicle_type,make_model,odometer) VALUES(?,?,?,?,?)",(body.vehicle_name,body.registration.upper(),body.vehicle_type,body.make_model,body.odometer))
+            cur=c.execute("INSERT INTO vehicles(user_id,vehicle_name,registration,vehicle_type,make_model,odometer) VALUES(?,?,?,?,?,?)",(user["id"],body.vehicle_name,body.registration.upper(),body.vehicle_type,body.make_model,body.odometer))
             row=c.execute("SELECT * FROM vehicles WHERE id=?",(cur.lastrowid,)).fetchone()
         return dict(row)
     except sqlite3.IntegrityError: raise HTTPException(409,"Registration number already exists")
 @app.delete("/api/vehicles/{vehicle_id}")
 def delete_vehicle(vehicle_id:int,user=Depends(current_user)):
     with db() as c:
-        c.execute("DELETE FROM work_orders WHERE vehicle_id=?",(vehicle_id,))
-        cur=c.execute("DELETE FROM vehicles WHERE id=?",(vehicle_id,))
+        c.execute("DELETE FROM work_orders WHERE vehicle_id=? AND user_id=?",(vehicle_id,user["id"]))
+        cur=c.execute("DELETE FROM vehicles WHERE id=? AND user_id=?",(vehicle_id,user["id"]))
         if not cur.rowcount: raise HTTPException(404,"Vehicle not found")
     return {"deleted":True}
 
 @app.post("/api/tyres/screen")
 def screen_tyre(body:ScreenIn,user=Depends(current_user)):
+    if body.vehicle_id is not None:
+        with db() as c:
+            owned = c.execute("SELECT 1 FROM vehicles WHERE id=? AND user_id=?", (body.vehicle_id,user["id"])).fetchone()
+        if not owned: raise HTTPException(404, "Vehicle not found in your workspace")
     flags=[]; advice=[]
     if body.manufacturer_min_psi is not None and body.pressure_psi < body.manufacturer_min_psi:
         flags.append("Pressure below supplied manufacturer minimum"); advice.append("Arrange a safe pressure check and inspect for leakage.")
@@ -179,18 +190,21 @@ async def preview_csv(file:UploadFile=File(...), user=Depends(current_user)):
 
 @app.get("/api/work-orders")
 def get_orders(user=Depends(current_user)):
-    with db() as c: return [dict(r) for r in c.execute("SELECT w.*,v.registration FROM work_orders w LEFT JOIN vehicles v ON v.id=w.vehicle_id ORDER BY w.id DESC")]
+    with db() as c: return [dict(r) for r in c.execute("SELECT w.*,v.registration FROM work_orders w LEFT JOIN vehicles v ON v.id=w.vehicle_id WHERE w.user_id=? ORDER BY w.id DESC", (user["id"],))]
 @app.post("/api/work-orders")
 def create_order(body:WorkOrderIn,user=Depends(current_user)):
     if body.priority not in ("Low","Medium","High","Critical"): raise HTTPException(400,"Invalid priority")
     with db() as c:
-        cur=c.execute("INSERT INTO work_orders(vehicle_id,title,priority,description) VALUES(?,?,?,?)",(body.vehicle_id,body.title,body.priority,body.description))
+        if body.vehicle_id is not None:
+            owned = c.execute("SELECT 1 FROM vehicles WHERE id=? AND user_id=?", (body.vehicle_id,user["id"])).fetchone()
+            if not owned: raise HTTPException(404, "Vehicle not found in your workspace")
+        cur=c.execute("INSERT INTO work_orders(user_id,vehicle_id,title,priority,description) VALUES(?,?,?,?,?)",(user["id"],body.vehicle_id,body.title,body.priority,body.description))
         row=c.execute("SELECT * FROM work_orders WHERE id=?",(cur.lastrowid,)).fetchone()
     return dict(row)
 @app.patch("/api/work-orders/{order_id}")
 def update_order(order_id:int,status:str,user=Depends(current_user)):
     if status not in ("Open","In progress","Completed"): raise HTTPException(400,"Invalid status")
     with db() as c:
-        cur=c.execute("UPDATE work_orders SET status=? WHERE id=?",(status,order_id))
+        cur=c.execute("UPDATE work_orders SET status=? WHERE id=? AND user_id=?",(status,order_id,user["id"]))
         if not cur.rowcount: raise HTTPException(404,"Work order not found")
     return {"updated":True,"status":status}
