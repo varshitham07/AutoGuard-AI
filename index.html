@@ -79,6 +79,52 @@
 }
 @media(max-width:380px){.stats,.grid.stats{grid-template-columns:1fr!important}.userpill{gap:5px}.userpill .btn{padding:6px 8px!important}}
 
+
+/* Mobile layout correction: prevent off-canvas content and align every section */
+@media(max-width:650px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ body{margin:0}
+ .shell,.main,.content,.content>section,.section.active{width:100%;max-width:100%;min-width:0}
+ .content{margin:0 auto;padding:16px 14px}
+ .section .heading{width:100%;min-width:0;align-items:flex-start;text-align:left}
+ .section .heading>div{width:100%;min-width:0}
+ .section h1,.section h2,.section h3,.section p,.section label{overflow-wrap:anywhere}
+ .grid,.grid>* ,.split>* ,.discover-grid>* ,.media-grid>*{min-width:0;max-width:100%}
+ .grid{width:100%}
+ .card,.result,.notice,.hero-photo,.mechanic-hero,.media-card{width:100%;min-width:0;max-width:100%}
+ .card{overflow:hidden}
+ .cardhead{width:100%;min-width:0;justify-content:space-between}
+ .rowactions{width:100%;min-width:0;flex-wrap:wrap;align-items:stretch}
+ .rowactions>.btn,.rowactions>button{flex:1 1 130px;min-width:0;white-space:normal}
+ .heading>.btn{width:100%;max-width:100%}
+ .formgrid,.field{width:100%;min-width:0}
+ .field input,.field select,.field textarea, input,select,textarea{width:100%;max-width:100%;min-width:0}
+ .field.full{grid-column:1/-1}
+ .hero-copy{width:100%;max-width:100%;padding:20px 16px}
+ .hero-copy p{max-width:100%}
+ .hero-tags{max-width:100%}
+ .image-feature{width:100%;grid-template-columns:minmax(0,1fr)}
+ .image-feature>div{min-width:0}
+ .media-grid{width:100%;grid-template-columns:minmax(0,1fr)}
+ .video-frame{width:100%;max-width:100%}
+ .tablewrap{display:block;width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .tablewrap table{width:max-content;min-width:620px;max-width:none}
+ .topbar{width:100%;min-width:0}
+ .userpill{min-width:0;flex-shrink:0}
+ .crumb{flex:1}
+ .loginwrap{width:100%;max-width:100%;padding:16px}
+ .loginbox{width:100%;max-width:430px;min-width:0}
+ .toast{box-sizing:border-box}
+}
+@media(max-width:390px){
+ .content{padding-left:12px;padding-right:12px}
+ .stats,.grid.stats{grid-template-columns:minmax(0,1fr)!important}
+ .statvalue{overflow-wrap:anywhere}
+ .topbar{padding-left:10px;padding-right:10px}
+ .userpill .btn{font-size:11px}
+ .card{padding:13px}
+}
+
 </style></head><body>
 <div id="auth" class="loginwrap"><div class="loginbox"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div><div class="eyebrow">FLEET HEALTH PLATFORM</div><h1 id="authTitle">Welcome back</h1><p class="sub" id="authSub">Sign in to your vehicle intelligence workspace.</p><form id="authForm"><div class="field" id="nameField" style="display:none"><label>Full name</label><input id="name" autocomplete="name"></div><div class="field"><label>Email address</label><input id="email" type="email" required autocomplete="email" placeholder="you@company.com"></div><div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div><button class="btn primary" style="width:100%;margin-top:12px" id="authSubmit">Sign in</button></form><p class="muted" style="font-size:12px;text-align:center;margin-top:18px"><span id="authSwitchText">New to AutoGuard?</span> <a href="#" id="authSwitch" style="color:#83baff">Create account</a></p><div class="notice" id="authModeNote">Checking application mode…</div></div></div>
 <div id="app" class="shell" style="display:none">
