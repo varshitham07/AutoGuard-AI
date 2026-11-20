@@ -1,22 +1,24 @@
-# AutoGuard AI — 5-minute company walkthrough
+# Company demo walkthrough
 
-## Opening
-AutoGuard AI is a vehicle-health and maintenance intelligence prototype. It combines a fleet asset register, evidence-linked tyre telemetry screening, dataset intake and maintenance action tracking in one workflow.
+## What the MVP demonstrates
 
-## Demonstration sequence
-1. Register a workspace account. Explain that the first local account is provisioned as administrator for the demo.
-2. Register one vehicle in Fleet Management.
-3. Open TyreGuard Sensors. Enter a tyre position, pressure, temperature and speed. If known, enter the vehicle/tyre manufacturer's specified pressure range. Run screening and show the flags and recommended follow-up.
-4. Open Data Lab and upload a UTF-8 CSV. Show the detected columns, row count and sample rows.
-5. Create a work order and change its status to In progress or Completed.
-6. Open EngineGuard and explain the dataset-to-model validation plan.
+1. Create an operator account and sign in.
+2. Register a fleet vehicle and review the fleet list.
+3. Enter tyre pressure, temperature and speed with manufacturer limits; review the rule-based evidence.
+4. Convert a tyre warning into a maintenance work order.
+5. Update work-order status and review the dashboard.
+6. Open EngineGuard to see the Scania APS dataset scope and model readiness.
+7. After completing the separate model-training steps, upload a CSV with the official 170 Scania sensor feature headers to run real model inference.
 
-## Technical explanation
-- FastAPI exposes authenticated REST endpoints.
-- SQLite persists accounts, vehicles and work orders locally.
-- Passwords are stored as PBKDF2-HMAC-SHA256 hashes with unique salts.
-- Tyre screening is transparent rule-based logic; the response includes evidence, flags, recommendations and a disclaimer.
-- CSV intake performs file-size, encoding and parsing checks.
+## Be accurate when presenting
 
-## What is not claimed
-There is no trained EngineGuard failure model, no trained tyre-image classifier, and no measured model accuracy in this MVP. Those are subsequent research and validation tasks. Do not claim the tyre screening predicts sudden blowouts or that the prototype is production-certified.
+- Fleet, account, work-order and tyre screening features are functional in the local FastAPI + SQLite application.
+- TyreGuard uses transparent screening rules; it is not a tyre-failure ML model.
+- EngineGuard uses the official Scania APS failure dataset workflow. A trained model is not included in the repository by default. Download the official dataset and run `python train_model.py` before demonstrating predictions.
+- Scania APS predictions are specific to the heavy-truck Air Pressure System dataset, not passenger-car engine diagnostics.
+- GitHub Pages is a static preview. Use the local Windows startup script for the backend-backed demo.
+- Do not present sample values or untrained model outputs as real predictive results.
+
+## Model preparation
+
+Follow [MODEL_TRAINING.md](MODEL_TRAINING.md). The training script creates validation metrics from the downloaded dataset and writes a local model artifact that is intentionally excluded from Git.
