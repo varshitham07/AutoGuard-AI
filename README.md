@@ -51,7 +51,7 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 - CSV upload checks file structure and previews rows. It does not train a model. The EngineGuard prediction upload uses the trained Scania model only after the training step is completed.
 - This is a software demonstration and decision-support MVP, not a substitute for professional vehicle inspection or OEM guidance.
 
-## Machine-learning setup\n\nInstall `requirements-ml.txt`, download the official UCI APS training CSV to `data/raw/aps_failure_training_set.csv`, then run `python train_model.py`. See [docs/MODEL_TRAINING.md](docs/MODEL_TRAINING.md) for the complete steps and limitations.\n\n## API routes
+## Machine-learning setup\n\nRun `DOWNLOAD_SCANIA_DATA_WINDOWS.bat` to download the official UCI data, then run `TRAIN_AUTOGUARD_MODEL_WINDOWS.bat` to install ML dependencies and train. You can also install `requirements-ml.txt` and run `python train_model.py` manually. See [docs/MODEL_TRAINING.md](docs/MODEL_TRAINING.md) for the complete steps and limitations.\n\n## API routes
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
 - `GET/POST/DELETE /api/vehicles`
