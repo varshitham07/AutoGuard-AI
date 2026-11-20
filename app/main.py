@@ -24,6 +24,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS vehicles(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_name TEXT NOT NULL, registration TEXT UNIQUE NOT NULL, vehicle_type TEXT NOT NULL, make_model TEXT DEFAULT '', odometer REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), vehicle_id INTEGER, title TEXT NOT NULL, priority TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'Open', created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
         CREATE TABLE IF NOT EXISTS tyre_checks(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), vehicle_id INTEGER, tyre_position TEXT NOT NULL, pressure_psi REAL NOT NULL, temperature_c REAL NOT NULL, speed_kmh REAL NOT NULL DEFAULT 0, status TEXT NOT NULL, flags_json TEXT NOT NULL, recommendations_json TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(vehicle_id) REFERENCES vehicles(id));
+        CREATE TABLE IF NOT EXISTS model_predictions(id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), filename TEXT NOT NULL, row_count INTEGER NOT NULL, flagged_count INTEGER NOT NULL, results_json TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
         """)
         # Upgrade databases created by earlier MVP versions without deleting existing records.
         vehicle_cols = {r["name"] for r in c.execute("PRAGMA table_info(vehicles)")}
@@ -99,6 +100,65 @@ def home():
 @app.get("/api/health")
 def health():
     return {"status":"ok","product":"AutoGuard AI","mode":"local demonstration"}
+
+@app.get("/api/model/status")
+def get_model_status(user=Depends(current_user)):
+    from app.model_service import model_status
+    return model_status()
+
+@app.post("/api/model/predict")
+async def predict_aps_csv(file: UploadFile = File(...), user=Depends(current_user)):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(400, "Please upload a CSV file")
+    raw = await file.read()
+    if len(raw) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Prediction CSV must be smaller than 10 MB")
+    try:
+        import pandas as pd
+        from app.model_service import predict_frame, load_artifact
+        if load_artifact() is None:
+            raise HTTPException(503, "APS model is not trained on this installation. Follow docs/MODEL_TRAINING.md.")
+        frame = pd.read_csv(io.BytesIO(raw), na_values=["na", "NA", ""])
+        if frame.empty:
+            raise HTTPException(400, "CSV contains no data rows")
+        if len(frame) > 500:
+            raise HTTPException(400, "Upload up to 500 rows per prediction request")
+        if "class" in frame.columns:
+            raise HTTPException(400, "Prediction CSV must not contain the class target column")
+        results = predict_frame(frame)
+        flagged = sum(1 for row in results if row["flagged"])
+        with db() as c:
+            c.execute(
+                "INSERT INTO model_predictions(user_id,filename,row_count,flagged_count,results_json) VALUES(?,?,?,?,?)",
+                (user["id"], file.filename, len(results), flagged, json.dumps(results))
+            )
+        return {
+            "filename": file.filename,
+            "row_count": len(results),
+            "flagged_count": flagged,
+            "model": "Scania APS failure classifier",
+            "scope": "Heavy-truck APS dataset context only",
+            "results": results,
+            "disclaimer": "A model alert is a screening recommendation, not a diagnosis. A low score does not guarantee vehicle safety."
+        }
+    except HTTPException:
+        raise
+    except UnicodeDecodeError:
+        raise HTTPException(400, "CSV must be UTF-8 encoded")
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except Exception as exc:
+        raise HTTPException(400, f"Could not process prediction CSV: {exc}")
+
+@app.get("/api/model/history")
+def model_prediction_history(user=Depends(current_user), limit: int = 20):
+    limit = max(1, min(limit, 50))
+    with db() as c:
+        rows = c.execute(
+            "SELECT id,filename,row_count,flagged_count,created_at FROM model_predictions WHERE user_id=? ORDER BY id DESC LIMIT ?",
+            (user["id"], limit)
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 @app.post("/api/auth/register")
 def register(body: RegisterIn):
