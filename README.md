@@ -82,3 +82,9 @@ pytest -q
 ## Before real-world deployment
 
 The current backend uses local SQLite and a demonstration default signing secret. A public multi-user deployment needs a managed database, a unique secret stored outside source control, HTTPS, rate limiting, backups, audit logging, account/session controls and security testing. Do not expose the current default configuration to production traffic.
+
+## Owner support: mechanic discovery and learning centre
+
+- **Find a Mechanic & Learn** provides location-and-service searches that open Google Maps search results for nearby repair workshops, tyre services, battery services, auto electricians, diagnostics and roadside assistance. The visitor chooses the location; AutoGuard AI does not create or certify business listings, and users should verify current contact details, hours and reviews in Maps.
+- The learning centre includes embedded third-party educational videos and visual maintenance cards. Video availability depends on the original publisher and YouTube.
+- These resources are general education, not vehicle-specific repair instructions. Follow the owner's manual and use qualified technicians for safety-critical repairs.
