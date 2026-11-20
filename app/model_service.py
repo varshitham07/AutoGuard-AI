@@ -1,7 +1,6 @@
 """Loading and inference helpers for the trained Scania APS model."""
 from pathlib import Path
 import joblib
-import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 MODEL_FILE = ROOT / "app" / "models" / "scania_aps_model.joblib"
@@ -31,7 +30,8 @@ def model_status():
     }
 
 
-def predict_frame(frame: pd.DataFrame):
+def predict_frame(frame):
+    import pandas as pd
     artifact = load_artifact()
     if artifact is None:
         raise RuntimeError("Model is not trained. Follow docs/MODEL_TRAINING.md.")
