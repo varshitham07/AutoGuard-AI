@@ -131,3 +131,22 @@ def test_vehicle_records_are_account_scoped():
     response = client.get("/api/vehicles", headers=auth(second_token))
     assert response.status_code == 200
     assert all(item["id"] != vehicle.json()["id"] for item in response.json())
+
+
+
+def test_model_status_reports_untrained_installation():
+    token = create_user()
+    response = client.get("/api/model/status", headers=auth(token))
+    assert response.status_code == 200
+    assert response.json()["available"] is False
+    assert "Scania APS" in response.json()["model"]
+
+
+def test_model_prediction_requires_training_artifact():
+    token = create_user()
+    response = client.post(
+        "/api/model/predict",
+        headers=auth(token),
+        files={"file": ("sensor.csv", "aa_000\n1\n", "text/csv")},
+    )
+    assert response.status_code == 503
