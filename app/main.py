@@ -93,6 +93,10 @@ class WorkOrderIn(BaseModel):
     priority: str = "Medium"
     description: str = ""
 
+class AssistantChatIn(BaseModel):
+    message: str = Field(min_length=2, max_length=2000)
+    vehicle_id: Optional[int] = None
+
 @app.get("/", response_class=HTMLResponse)
 def home():
     return (BASE / "web" / "index.html").read_text(encoding="utf-8")
@@ -295,3 +299,86 @@ def update_order(order_id:int,status:str,user=Depends(current_user)):
         cur=c.execute("UPDATE work_orders SET status=? WHERE id=? AND user_id=?",(status,order_id,user["id"]))
         if not cur.rowcount: raise HTTPException(404,"Work order not found")
     return {"updated":True,"status":status}
+
+
+@app.post("/api/assistant/chat")
+def assistant_chat(body: AssistantChatIn, user=Depends(current_user)):
+    """Answer vehicle-maintenance questions using the signed-in user's own records."""
+    with db() as c:
+        if body.vehicle_id is not None:
+            vehicle = c.execute("SELECT id,vehicle_name,vehicle_type,make_model,odometer FROM vehicles WHERE id=? AND user_id=?", (body.vehicle_id,user["id"])).fetchone()
+            if not vehicle:
+                raise HTTPException(404, "Vehicle not found in your workspace")
+            vehicles = [dict(vehicle)]
+        else:
+            vehicles = [dict(r) for r in c.execute("SELECT id,vehicle_name,vehicle_type,make_model,odometer FROM vehicles WHERE user_id=? ORDER BY id DESC LIMIT 10", (user["id"],))]
+        orders = [dict(r) for r in c.execute("SELECT title,priority,description,status,created_at,vehicle_id FROM work_orders WHERE user_id=? ORDER BY id DESC LIMIT 12", (user["id"],))]
+        checks = [dict(r) for r in c.execute("SELECT tyre_position,pressure_psi,temperature_c,status,flags_json,recommendations_json,created_at,vehicle_id FROM tyre_checks WHERE user_id=? ORDER BY id DESC LIMIT 10", (user["id"],))]
+    context = {"vehicles":vehicles,"recent_work_orders":orders,"recent_tyre_checks":checks}
+    question = body.message.strip()
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if api_key:
+        try:
+            import urllib.request
+            model = os.getenv("AUTOGUARD_AI_MODEL", "gpt-4o-mini")
+            prompt = (
+                "You are AutoGuard AI Mechanic, a careful vehicle-maintenance explainer. "
+                "Explain technical topics in simple language. Use the supplied owner records when relevant; "
+                "never invent service history, fault codes, measurements, or diagnoses. Distinguish possibilities from facts. "
+                "Ask a focused follow-up when needed. For brakes, steering, fuel leaks, overheating, tyre damage, "
+                "warning lights with severe symptoms, or loss of control, prioritise stopping safely and professional inspection. "
+                "Never tell users to work under an unsupported vehicle, bypass safety systems, or drive an unsafe vehicle. "
+                "Do not provide model-specific torque/pressure/specification values unless present in reliable supplied context. "
+                "If records do not contain the answer, say so clearly. Keep the answer readable with short headings and steps."
+            )
+            payload = json.dumps({
+                "model": model,
+                "messages": [
+                    {"role":"system","content":prompt},
+                    {"role":"user","content":"Owner records (JSON): " + json.dumps(context) + "\n\nQuestion: " + question}
+                ],
+                "temperature":0.25,
+                "max_tokens":650
+            }).encode("utf-8")
+            request = urllib.request.Request(
+                "https://api.openai.com/v1/chat/completions",
+                data=payload,
+                headers={"Authorization":"Bearer " + api_key,"Content-Type":"application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(request, timeout=25) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            answer = result["choices"][0]["message"]["content"].strip()
+            return {"answer":answer,"mode":"generative_ai","model":model,"records_used":{"vehicles":len(vehicles),"work_orders":len(orders),"tyre_checks":len(checks)}}
+        except Exception:
+            # Fall back to local guidance if provider configuration/network is unavailable.
+            pass
+    lower = question.lower()
+    recent_orders = orders[:4]
+    recent_checks = checks[:3]
+    if any(k in lower for k in ("previous repair","last repair","repair history","service history","what was repaired","last service","previous service")):
+        if recent_orders:
+            lines = [f"- {o['title']} — {o['status']} ({o['created_at']}); priority {o['priority']}." for o in recent_orders]
+            answer = "Here are the latest maintenance work orders saved in your AutoGuard account:\n" + "\n".join(lines) + "\n\nThese are recorded work orders, not proof that every repair was completed. Check the status and notes with your workshop."
+        else:
+            answer = "I couldn't find any maintenance work orders in your account yet. Add a work order after a repair or inspection, and I can refer to it in future questions."
+    elif any(k in lower for k in ("tyre","tire","pressure","puncture")):
+        if recent_checks:
+            c0 = recent_checks[0]
+            flags = ", ".join(json.loads(c0["flags_json"])) or "no rule-based warning recorded"
+            answer = f"Your latest saved tyre check was {c0['tyre_position']}: {c0['pressure_psi']} PSI and {c0['temperature_c']} °C on {c0['created_at']}. Result: {c0['status']} ({flags}). Compare pressure with the vehicle maker's specification. If a tyre is visibly damaged, losing pressure, hot, or vibrating, stop safely and arrange an inspection."
+        else:
+            answer = "I don't see a saved tyre check yet. Record the tyre position, pressure and temperature in TyreGuard first. Use the pressure shown on the vehicle's tyre placard or owner's manual—not a generic internet value."
+    elif any(k in lower for k in ("brake","braking","steering","wheel wobble")):
+        answer = "Brake or steering symptoms can affect vehicle control. Possible causes depend on the exact symptom and vehicle. If braking feels weak, the vehicle pulls, there is grinding, strong vibration, or steering control changes, stop in a safe place and arrange a professional inspection; don't continue a journey to test it. Tell me the vehicle model and whether you hear squealing, grinding, or feel vibration."
+    elif any(k in lower for k in ("overheat","overheating","temperature","coolant")):
+        answer = "If the temperature warning is on or steam is visible, pull over safely, switch off the engine and let it cool. Do not open a hot radiator or coolant cap. Possible causes include low coolant, a leak, a cooling fan issue or thermostat trouble. Arrange inspection before driving again if it overheated."
+    elif any(k in lower for k in ("battery","starting","start","crank")):
+        answer = "A slow or failed start can be related to a weak battery, loose/corroded terminals, starter motor or charging-system issue. Note whether dashboard lights are dim and whether you hear clicking. Avoid repeated long cranking; have the battery and charging system tested."
+    elif any(k in lower for k in ("engine light","check engine","warning light","fault code","obd")):
+        answer = "A warning light needs its exact symbol, colour and any diagnostic trouble code (DTC) to narrow down. A flashing engine light or severe loss of power/noise needs prompt safe stopping and inspection. Share the code and vehicle model; don't replace parts based only on a generic guess."
+    else:
+        answer = "I can help explain common vehicle symptoms and review records saved in your AutoGuard workspace. Try asking about a brake noise, overheating, starting problem, tyre warning, or your previous maintenance work orders. Include the vehicle make/model and exact symptoms for more useful guidance."
+    if vehicles:
+        answer += "\n\nVehicles in your workspace: " + "; ".join(f"{v['vehicle_name']} ({v['make_model'] or v['vehicle_type']}, {v['odometer']} km)" for v in vehicles[:3]) + "."
+    return {"answer":answer,"mode":"built_in_guidance","model":None,"records_used":{"vehicles":len(vehicles),"work_orders":len(orders),"tyre_checks":len(checks)},"note":"Connect an OpenAI API key on the backend to enable generative conversations. This built-in mode uses limited topic guidance and saved records."}
