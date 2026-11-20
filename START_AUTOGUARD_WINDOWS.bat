@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableExtensions EnableDelayedExpansion
 title AutoGuard AI
 cd /d "%~dp0"
 where python >nul 2>nul
@@ -12,8 +12,10 @@ if not exist .venv python -m venv .venv
 call .venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+if not defined APP_SECRET if exist ".autoguard_secret" set /p APP_SECRET=<".autoguard_secret"
 if not defined APP_SECRET (
   for /f "delims=" %%i in ('python -c "import secrets; print(secrets.token_urlsafe(48))"') do set "APP_SECRET=%%i"
+  >".autoguard_secret" echo !APP_SECRET!
 )
 if not defined DATABASE_PATH set "DATABASE_PATH=%CD%\autoguard.db"
 echo.
