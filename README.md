@@ -36,6 +36,8 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 
 ## Working capabilities
 
+- AI Mechanic assistant endpoint and chat interface. In local mode it can explain a limited set of common symptoms and retrieve the signed-in owner's saved work orders and tyre checks. For full generative conversations, configure an optional OpenAI API key on the backend; see [AI assistant setup](docs/AI_ASSISTANT.md).
+
 - Account registration and login with PBKDF2 password hashing and signed expiring bearer tokens.
 - Fleet vehicle create, list and delete.
 - Tyre telemetry screening using transparent, configurable demonstration rules, with saved per-account screening history.
@@ -56,6 +58,7 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
 - `GET/POST/DELETE /api/vehicles`
 - `POST /api/tyres/screen`, `GET /api/tyres/history`\n- `GET /api/model/status`, `POST /api/model/predict`, `GET /api/model/history`
+- `POST /api/assistant/chat` (owner-scoped vehicle and maintenance context)
 - `POST /api/data/preview`
 - `GET/POST/PATCH /api/work-orders`
 - `GET /api/dashboard/summary`
