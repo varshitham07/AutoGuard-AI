@@ -191,7 +191,12 @@ def summary(user=Depends(current_user)):
         vehicles = c.execute("SELECT COUNT(*) FROM vehicles WHERE user_id=?", (user["id"],)).fetchone()[0]
         orders = c.execute("SELECT COUNT(*) FROM work_orders WHERE user_id=? AND status!='Completed'", (user["id"],)).fetchone()[0]
         open_orders = [dict(r) for r in c.execute("SELECT w.*,v.registration FROM work_orders w LEFT JOIN vehicles v ON v.id=w.vehicle_id WHERE w.user_id=? ORDER BY w.id DESC LIMIT 5", (user["id"],))]
-    return {"vehicles":vehicles,"open_work_orders":orders,"model_status":"Validation pending","recent_work_orders":open_orders}
+    try:
+        from app.model_service import model_status as read_model_status
+        trained = read_model_status()["available"]
+    except Exception:
+        trained = False
+    return {"vehicles":vehicles,"open_work_orders":orders,"model_status":"Trained" if trained else "Training required","recent_work_orders":open_orders}
 
 @app.get("/api/vehicles")
 def list_vehicles(user=Depends(current_user)):
