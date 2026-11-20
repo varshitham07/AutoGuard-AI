@@ -65,7 +65,7 @@ let token=localStorage.getItem('ag_token'), user=null, registerMode=false, lastT
 
 // GitHub Pages demo mode: browser-local data only; no backend or server authentication.
 const DEMO_KEY='ag_browser_demo_v1';
-function demoStore(){try{return JSON.parse(localStorage.getItem(DEMO_KEY))||{user:null,vehicles:[],orders:[],tyreChecks:[],nextVehicleId:1,nextOrderId:1}}catch(_){return {user:null,vehicles:[],orders:[],tyreChecks:[],nextVehicleId:1,nextOrderId:1}}}
+function demoStore(){try{const d=JSON.parse(localStorage.getItem(DEMO_KEY))||{};return {user:d.user||null,vehicles:d.vehicles||[],orders:d.orders||[],tyreChecks:d.tyreChecks||[],serviceRecords:d.serviceRecords||[],nextVehicleId:d.nextVehicleId||1,nextOrderId:d.nextOrderId||1,nextServiceId:d.nextServiceId||1}}catch(_){return {user:null,vehicles:[],orders:[],tyreChecks:[],serviceRecords:[],nextVehicleId:1,nextOrderId:1,nextServiceId:1}}}
 function saveDemo(d){localStorage.setItem(DEMO_KEY,JSON.stringify(d))}
 function demoRequireUser(d){if(!d.user||!token)throw Error('Please create a demo account or sign in');return d.user}
 async function api(path,opts={}){
@@ -105,6 +105,31 @@ async function api(path,opts={}){
   return {vehicles:d.vehicles.length,open_work_orders:d.orders.filter(x=>x.status!=='Completed').length,model_status:'Validation pending',recent_work_orders:recent};
  }
  if(path==='/api/vehicles'&&method==='GET')return d.vehicles.slice().sort((a,b)=>b.id-a.id);
+
+ if(path==='/api/service-records'&&method==='GET'){
+  const today=new Date().toISOString().slice(0,10);
+  return d.serviceRecords.slice().sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))).map(r=>{
+   const v=d.vehicles.find(x=>x.id===Number(r.vehicle_id))||{};
+   const dueDate=Boolean(r.next_service_date&&r.next_service_date<=today);
+   const dueKm=r.next_service_odometer!=null&&Number(v.odometer||0)>=Number(r.next_service_odometer);
+   return {...r,vehicle_name:v.vehicle_name||'Vehicle removed',registration:v.registration||'—',current_odometer:Number(v.odometer||0),total_cost:Number(r.parts_cost||0)+Number(r.labour_cost||0),service_status:dueDate||dueKm?'Due / overdue':(r.next_service_date||r.next_service_odometer!=null?'Scheduled':'Logged')};
+  });
+ }
+ if(path==='/api/service-records'&&method==='POST'){
+  const v=d.vehicles.find(x=>x.id===Number(body.vehicle_id));
+  if(!v)throw Error('Select a vehicle in your workspace');
+  if(!body.service_date||!body.service_type)throw Error('Enter the service date and type');
+  if(body.next_service_date&&body.next_service_date<body.service_date)throw Error('Next service date cannot be earlier than the service date');
+  const row={id:d.nextServiceId++,vehicle_id:v.id,service_date:body.service_date,service_type:String(body.service_type).trim(),odometer:Number(body.odometer||0),description:body.description||'',parts_cost:Number(body.parts_cost||0),labour_cost:Number(body.labour_cost||0),next_service_date:body.next_service_date||null,next_service_odometer:body.next_service_odometer==null?null:Number(body.next_service_odometer),created_at:new Date().toISOString()};
+  if(row.odometer<0||row.parts_cost<0||row.labour_cost<0)throw Error('Mileage and costs cannot be negative');
+  d.serviceRecords.push(row);saveDemo(d);return {...row,vehicle_name:v.vehicle_name,registration:v.registration,total_cost:row.parts_cost+row.labour_cost,service_status:'Logged'};
+ }
+ const odo=path.match(/^\\/api\\/vehicles\\/(\\d+)\\/odometer\\?odometer=(\\d+(?:\\.\\d+)?)$/);
+ if(odo&&method==='PATCH'){
+  const v=d.vehicles.find(x=>x.id===Number(odo[1]));if(!v)throw Error('Vehicle not found');
+  const km=Number(odo[2]);if(!Number.isFinite(km)||km<Number(v.odometer||0))throw Error('Odometer must be a valid reading equal to or greater than the saved value');
+  v.odometer=km;saveDemo(d);return {updated:true,odometer:km};
+ }
  if(path==='/api/vehicles'&&method==='POST'){
   if(d.vehicles.some(x=>x.registration.toUpperCase()===String(body.registration||'').toUpperCase()))throw Error('Registration number already exists');
   const row={id:d.nextVehicleId++,vehicle_name:body.vehicle_name,registration:String(body.registration||'').toUpperCase(),vehicle_type:body.vehicle_type,make_model:body.make_model||'',odometer:Number(body.odometer||0)};
@@ -123,6 +148,36 @@ async function api(path,opts={}){
   if(!flags.length)recommendations.push('Continue routine monitoring and compare with vehicle-specific manufacturer guidance.');
   const result={status:flags.length?'Inspection required':'No rule-based warning',flags,recommendations,evidence:{tyre_position:body.tyre_position,pressure_psi:body.pressure_psi,temperature_c:body.temperature_c,speed_kmh:body.speed_kmh},method:'Transparent rule-based screening',disclaimer:'Demonstration thresholds are not universal safety limits. Configure using OEM and tyre-maker specifications. This screening cannot predict or rule out sudden tyre failure.'};
   d.tyreChecks=d.tyreChecks||[];d.tyreChecks.push({id:d.tyreChecks.length+1,vehicle_id:body.vehicle_id||null,registration:d.vehicles.find(v=>v.id===Number(body.vehicle_id))?.registration||'Unassigned',tyre_position:body.tyre_position,pressure_psi:body.pressure_psi,temperature_c:body.temperature_c,status:result.status,created_at:new Date().toISOString()});saveDemo(d);return result;
+ }
+
+ if(path==='/api/assistant/chat'&&method==='POST'){
+  const q=String(body.message||'').trim();if(!q)throw Error('Enter a vehicle question');
+  const selected=body.vehicle_id?d.vehicles.find(v=>v.id===Number(body.vehicle_id)):null;
+  if(body.vehicle_id&&!selected)throw Error('Vehicle not found in this browser workspace');
+  const services=d.serviceRecords.filter(r=>!selected||Number(r.vehicle_id)===selected.id);
+  const orders=d.orders.filter(r=>!selected||Number(r.vehicle_id)===selected.id);
+  const tyres=d.tyreChecks.filter(r=>!selected||Number(r.vehicle_id)===selected.id);
+  const lower=q.toLowerCase();let answer='';
+  if(/history|previous|last repair|service record|what was done/.test(lower)){
+   const lines=[];
+   services.slice().reverse().slice(0,5).forEach(r=>lines.push('Service: '+r.service_type+' on '+r.service_date+'; recorded cost ₹'+(Number(r.parts_cost||0)+Number(r.labour_cost||0)).toLocaleString('en-IN')+'.'));
+   orders.slice(0,5).forEach(r=>lines.push('Work order: '+r.title+' ('+r.priority+', '+r.status+').'));
+   tyres.slice(-5).reverse().forEach(r=>lines.push('Tyre screening: '+r.tyre_position+' — '+r.status+'.'));
+   answer=lines.length?'Here are the matching saved records:\n'+lines.join('\n'):'I could not find matching saved service, work-order or tyre records for this workspace. Add records to build a useful maintenance history.';
+  }else if(/brake|steer|fuel leak|smoke|overheat|overheating/.test(lower)){
+   answer='Safety first: if the vehicle is overheating, smoking, leaking fuel, or has abnormal braking or steering, stop in a safe place as soon as it is safe to do so. Do not continue driving to test it. Arrange a qualified inspection or roadside assistance. I cannot confirm the cause from a text description.';
+  }else if(/tyre|tire|pressure|puncture/.test(lower)){
+   answer='Check the pressure only when the tyres are cold and compare it with the vehicle maker’s placard or manual, not a universal internet value. Look for visible cuts, bulges, embedded objects or repeated pressure loss. If a tyre is damaged or losing pressure, avoid driving on it and arrange inspection.';
+  }else if(/battery|start|starting|crank/.test(lower)){
+   answer='A weak battery, loose/corroded terminals or a charging-system issue can cause starting trouble. Note whether the starter clicks, cranks slowly or does not respond. Avoid repeated long cranking and have the battery and charging system tested.';
+  }else if(/engine light|warning light|fault code|check engine/.test(lower)){
+   answer='An engine warning light can have many causes. Record the exact warning and any diagnostic trouble code (DTC); do not replace parts based only on the light. If the light is flashing, the engine is misfiring, or the vehicle loses power, stop safely and seek inspection.';
+  }else if(/coolant|temperature|hot/.test(lower)){
+   answer='If the temperature gauge is high, stop safely and switch the engine off. Never open a hot radiator or coolant cap. Let the system cool and arrange an inspection for coolant level, leaks, fan operation and related faults.';
+  }else{
+   answer='I can help explain common maintenance topics, but I need the exact symptom, when it happens, any dashboard warning or fault code, and the vehicle model/year. I cannot diagnose a vehicle remotely. If braking, steering, smoke, fuel leakage or overheating is involved, prioritise safety and get a qualified inspection.';
+  }
+  return {mode:'built_in_guidance',model:'browser-demo-guidance',answer,records_used:services.length+orders.length+tyres.length};
  }
  if(path==='/api/data/preview'&&method==='POST'){
   const file=opts.body instanceof FormData?opts.body.get('file'):null;if(!file)throw Error('Choose a CSV file first');
@@ -203,7 +258,7 @@ $('#generateReport').onclick=generateVehicleReport;
 $('#printReport').onclick=()=>{if(!currentReportHtml)return;const w=window.open('','_blank');if(!w){toast('Allow pop-ups to print the report');return;}w.document.open();w.document.write(currentReportHtml);w.document.close();w.focus();w.onload=()=>w.print();};
 
 async function loadAlerts(){
- const host=$('#alertList');if(location.hostname.endsWith('github.io')){host.innerHTML='<div class="empty"><strong>Backend required</strong>Alerts use account-scoped maintenance records available in the local FastAPI application. The public static preview cannot load those records.</div>';return;}
+ const host=$('#alertList');
  try{
   const [services,orders,tyres]=await Promise.all([api('/api/service-records'),api('/api/work-orders'),api('/api/tyres/history')]);
   const items=[];
