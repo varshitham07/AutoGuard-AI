@@ -226,6 +226,19 @@ def add_vehicle(body: VehicleIn, user=Depends(current_user)):
             row=c.execute("SELECT * FROM vehicles WHERE id=?",(cur.lastrowid,)).fetchone()
         return dict(row)
     except sqlite3.IntegrityError: raise HTTPException(409,"Registration number already exists")
+@app.patch("/api/vehicles/{vehicle_id}/odometer")
+def update_vehicle_odometer(vehicle_id:int, odometer:float, user=Depends(current_user)):
+    if odometer < 0:
+        raise HTTPException(400,"Odometer cannot be negative")
+    with db() as c:
+        row = c.execute("SELECT odometer FROM vehicles WHERE id=? AND user_id=?",(vehicle_id,user["id"])).fetchone()
+        if not row:
+            raise HTTPException(404,"Vehicle not found")
+        if odometer < row["odometer"]:
+            raise HTTPException(400,"New odometer reading cannot be lower than the saved reading")
+        c.execute("UPDATE vehicles SET odometer=? WHERE id=? AND user_id=?",(odometer,vehicle_id,user["id"]))
+    return {"updated":True,"odometer":odometer}
+
 @app.delete("/api/vehicles/{vehicle_id}")
 def delete_vehicle(vehicle_id:int,user=Depends(current_user)):
     with db() as c:
