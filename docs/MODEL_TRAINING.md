@@ -29,7 +29,7 @@ The script:
 - parses `na` as missing and applies median imputation;
 - uses a stratified 80/20 train/validation split with a fixed random seed;
 - trains a gradient-boosting classifier with positive-class sample weighting;
-- chooses a validation threshold by the published challenge cost matrix (false positive = 10; false negative = 500);
+- chooses a validation threshold on the model score by the published challenge cost matrix (false positive = 10; false negative = 500);
 - reports precision, recall, F1, PR-AUC, ROC-AUC, confusion matrix and challenge cost.
 
 It writes the trained artifact and measured metrics to `app/models/`. Those generated files are ignored by Git. **Do not report metrics until training has completed successfully on the downloaded dataset.**
@@ -44,6 +44,6 @@ Open `http://127.0.0.1:8000`, sign in, then use **EngineGuard → Upload Scania 
 
 ## 5. Scope and safety
 
-This is a dataset-specific classifier for APS-related component failure in the Scania heavy-truck dataset. It is not a passenger-car engine diagnostic tool, tyre failure detector, real-time telematics system or proof of a vehicle's current roadworthiness. A high-risk output is a recommendation for professional inspection, not a diagnosis. A low-risk output does not guarantee safety.
+The output is a class-weighted ranking score, not a calibrated real-world probability. This is a dataset-specific classifier for APS-related component failure in the Scania heavy-truck dataset. It is not a passenger-car engine diagnostic tool, tyre failure detector, real-time telematics system or proof of a vehicle's current roadworthiness. A high-risk output is a recommendation for professional inspection, not a diagnosis. A low-risk output does not guarantee safety.
 
 The official dataset uses anonymised sensor attributes, so model explanations are limited to the source feature identifiers unless additional licensed engineering documentation is available.
