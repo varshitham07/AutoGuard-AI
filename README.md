@@ -46,6 +46,9 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 - Service history with parts/labour cost totals, next-service date and odometer reminders, and account-scoped records.
 - Monotonic odometer updates to support mileage-based service reminders.
 - Dashboard summary and recent maintenance activity.
+- Printable vehicle health reports combining the selected vehicle profile, service records, recorded costs, tyre screening history and work orders; use the browser print dialog to save as PDF.
+- Alerts and reminders centre that surfaces due service entries, tyre screening flags and high/critical unfinished work orders from saved records.
+- Fleet Insights & Cost Analytics with vehicle filtering, monthly recorded service spend, service-type breakdown, vehicle-wise cost comparison, work-order status and CSV export.
 
 ## Important model and safety disclosures
 
