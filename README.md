@@ -20,7 +20,7 @@ GitHub Pages only hosts static files. This public preview therefore uses browser
 4. Wait for the server to start and open `http://127.0.0.1:8000`.
 5. Create an account and use the fleet, tyre screening and maintenance modules.
 
-The local website connects to the FastAPI backend and stores data in the local SQLite database file. Keep the server terminal open while using the website.
+The local website connects to the FastAPI backend and stores accounts, vehicles, work orders and tyre screening history in the local SQLite database file. Keep the server terminal open while using the website. The interface displays whether it is running in backend mode or browser-preview mode.
 
 Manual setup:
 ```bash
@@ -38,7 +38,7 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 
 - Account registration and login with PBKDF2 password hashing and signed expiring bearer tokens.
 - Fleet vehicle create, list and delete.
-- Tyre telemetry screening using transparent, configurable demonstration rules.
+- Tyre telemetry screening using transparent, configurable demonstration rules, with saved per-account screening history.
 - CSV upload, parsing checks and preview.
 - Maintenance work-order creation and status tracking.
 - Dashboard summary and recent maintenance activity.
@@ -55,10 +55,20 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
 - `GET/POST/DELETE /api/vehicles`
-- `POST /api/tyres/screen`
+- `POST /api/tyres/screen`, `GET /api/tyres/history`
 - `POST /api/data/preview`
 - `GET/POST/PATCH /api/work-orders`
 - `GET /api/dashboard/summary`
+
+## Automated checks
+
+GitHub Actions runs the API test suite on pushes and pull requests to `main`. The tests cover health, account registration, vehicle/work-order flow, tyre screening history, invalid OEM pressure ranges and account-level vehicle isolation.
+
+Run the same checks locally with:
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
 
 ## Before real-world deployment
 
