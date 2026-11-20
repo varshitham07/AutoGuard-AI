@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Train a cost-sensitive Scania APS failure classifier from the official UCI CSV.
 
-Expected input:
-  data/raw/aps_failure_training_set.csv
-
-The script makes a stratified hold-out validation split, chooses a probability
-threshold by the published challenge cost matrix, and saves the model plus
-metrics. It never downloads or fabricates data.
+Expected input: data/raw/aps_failure_training_set.csv
+Uses separate training, threshold-calibration and final test partitions.
 """
 from __future__ import annotations
 
@@ -19,12 +15,8 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
-    average_precision_score,
-    confusion_matrix,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
+    average_precision_score, confusion_matrix, precision_score,
+    recall_score, f1_score, roc_auc_score,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -35,6 +27,18 @@ MODEL_DIR = ROOT / "app" / "models"
 MODEL_FILE = MODEL_DIR / "scania_aps_model.joblib"
 METRICS_FILE = MODEL_DIR / "metrics.json"
 RANDOM_STATE = 42
+
+
+def choose_threshold(scores: np.ndarray, labels: pd.Series) -> tuple[float, int]:
+    """Choose the threshold using calibration data and the published challenge costs."""
+    thresholds = np.unique(np.r_[np.linspace(0.01, 0.99, 99), 0.5])
+    candidates = []
+    for threshold in thresholds:
+        pred = (scores >= threshold).astype(int)
+        tn, fp, fn, tp = confusion_matrix(labels, pred, labels=[0, 1]).ravel()
+        candidates.append((int(fp * 10 + fn * 500), float(threshold)))
+    cost, threshold = min(candidates, key=lambda item: (item[0], -item[1]))
+    return threshold, cost
 
 
 def main() -> None:
@@ -49,21 +53,23 @@ def main() -> None:
     if "class" not in data.columns:
         raise SystemExit("Expected target column named 'class' in UCI training CSV.")
     y = data.pop("class").astype(str).str.strip().str.lower().map({"neg": 0, "pos": 1})
-    if y.isna().any():
-        raise SystemExit("Unexpected target labels. Expected only 'neg' and 'pos'.")
-    if set(y.unique()) != {0, 1}:
-        raise SystemExit("Both negative and positive classes must be present.")
+    if y.isna().any() or set(y.unique()) != {0, 1}:
+        raise SystemExit("Unexpected target labels. Expected both 'neg' and 'pos'.")
     X = data.apply(pd.to_numeric, errors="coerce")
     if X.shape[1] != 170:
         raise SystemExit(f"Expected 170 operational features, found {X.shape[1]}.")
     if X.isna().all(axis=1).any():
         raise SystemExit("Some rows contain no usable sensor values; inspect the source CSV.")
 
-    X_train, X_valid, y_train, y_valid = train_test_split(
-        X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
+    # 70% model fitting, 15% threshold calibration, 15% untouched final test.
+    X_train, X_holdout, y_train, y_holdout = train_test_split(
+        X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y
+    )
+    X_cal, X_test, y_cal, y_test = train_test_split(
+        X_holdout, y_holdout, test_size=0.50,
+        random_state=RANDOM_STATE, stratify=y_holdout
     )
 
-    # Weight the rare positive class; validation remains untouched by fitting.
     negatives = int((y_train == 0).sum())
     positives = int((y_train == 1).sum())
     weights = np.where(y_train.to_numpy() == 1, negatives / positives, 1.0)
@@ -71,26 +77,21 @@ def main() -> None:
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median", add_indicator=True)),
         ("classifier", HistGradientBoostingClassifier(
-            learning_rate=0.08,
-            max_iter=160,
-            max_leaf_nodes=15,
-            l2_regularization=2.0,
-            early_stopping=True,
+            learning_rate=0.08, max_iter=160, max_leaf_nodes=15,
+            l2_regularization=2.0, early_stopping=True,
             random_state=RANDOM_STATE,
         )),
     ])
     model.fit(X_train, y_train, classifier__sample_weight=weights)
 
-    probabilities = model.predict_proba(X_valid)[:, 1]
-    # Published challenge costs: false positive = 10, false negative = 500.
-    thresholds = np.unique(np.r_[np.linspace(0.01, 0.99, 99), 0.5])
-    candidates = []
-    for threshold in thresholds:
-        predictions = (probabilities >= threshold).astype(int)
-        tn, fp, fn, tp = confusion_matrix(y_valid, predictions, labels=[0, 1]).ravel()
-        candidates.append((int(fp * 10 + fn * 500), float(threshold), tn, fp, fn, tp))
-    cost, threshold, tn, fp, fn, tp = min(candidates, key=lambda row: (row[0], -row[1]))
-    predictions = (probabilities >= threshold).astype(int)
+    calibration_scores = model.predict_proba(X_cal)[:, 1]
+    threshold, calibration_cost = choose_threshold(calibration_scores, y_cal)
+
+    # Final reported metrics are measured on data not used to fit or tune the threshold.
+    test_scores = model.predict_proba(X_test)[:, 1]
+    test_predictions = (test_scores >= threshold).astype(int)
+    tn, fp, fn, tp = confusion_matrix(y_test, test_predictions, labels=[0, 1]).ravel()
+    test_cost = int(fp * 10 + fn * 500)
 
     metrics = {
         "dataset": "UCI APS Failure at Scania Trucks (id 421)",
@@ -99,25 +100,28 @@ def main() -> None:
         "rows": int(len(data)),
         "features": int(X.shape[1]),
         "train_rows": int(len(X_train)),
-        "validation_rows": int(len(X_valid)),
+        "calibration_rows": int(len(X_cal)),
+        "test_rows": int(len(X_test)),
         "positive_train": positives,
         "negative_train": negatives,
-        "split": "stratified 80/20 hold-out; random_state=42",
+        "split": "stratified 70/15/15 train/calibration/test; random_state=42",
         "model": "median imputation + HistGradientBoostingClassifier",
         "threshold": threshold,
+        "threshold_selection": "Threshold selected on the separate calibration partition using false-positive cost 10 and false-negative cost 500.",
         "score_interpretation": "Class-weighted model score used for ranking and cost-sensitive thresholding; not a calibrated real-world failure probability.",
-        "validation": {
-            "precision": float(precision_score(y_valid, predictions, zero_division=0)),
-            "recall": float(recall_score(y_valid, predictions, zero_division=0)),
-            "f1": float(f1_score(y_valid, predictions, zero_division=0)),
-            "average_precision_pr_auc": float(average_precision_score(y_valid, probabilities)),
-            "roc_auc": float(roc_auc_score(y_valid, probabilities)),
+        "test": {
+            "precision": float(precision_score(y_test, test_predictions, zero_division=0)),
+            "recall": float(recall_score(y_test, test_predictions, zero_division=0)),
+            "f1": float(f1_score(y_test, test_predictions, zero_division=0)),
+            "average_precision_pr_auc": float(average_precision_score(y_test, test_scores)),
+            "roc_auc": float(roc_auc_score(y_test, test_scores)),
             "confusion_matrix": {"tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)},
-            "challenge_cost": int(cost),
+            "challenge_cost": test_cost,
             "cost_matrix": {"false_positive": 10, "false_negative": 500},
+            "calibration_partition_cost": int(calibration_cost),
         },
         "limitations": [
-            "Validation metrics are a single stratified hold-out estimate, not an independent external fleet trial.",
+            "Metrics are a single internal stratified test estimate, not an independent external fleet trial.",
             "Feature names are anonymised by the data provider.",
             "This model predicts APS-related failure in the Scania dataset context only.",
             "It is not a passenger-car engine or tyre failure model.",
@@ -126,10 +130,8 @@ def main() -> None:
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     artifact = {
-        "model": model,
-        "features": list(X.columns),
-        "threshold": threshold,
-        "metrics": metrics,
+        "model": model, "features": list(X.columns),
+        "threshold": threshold, "metrics": metrics,
     }
     joblib.dump(artifact, MODEL_FILE)
     METRICS_FILE.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
