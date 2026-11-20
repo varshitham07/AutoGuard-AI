@@ -19,3 +19,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Generated machine-learning artifacts and downloaded dataset
+app/models/*.joblib
+app/models/metrics.json
+data/raw/
