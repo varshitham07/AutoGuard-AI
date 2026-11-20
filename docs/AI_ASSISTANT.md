@@ -1,6 +1,6 @@
 # AutoGuard AI Mechanic
 
-The AI Mechanic page is served by the local FastAPI backend and requires a signed-in user.
+The AI Mechanic page is available in the local FastAPI application and as a limited browser-local demo on GitHub Pages. The public preview stores demo records in that browser only and does not provide secure multi-user accounts.
 
 ## What works without an AI provider key
 
