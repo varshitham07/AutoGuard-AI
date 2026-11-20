@@ -47,11 +47,43 @@
 .map-action{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:850px){.discover-grid{grid-template-columns:1fr}.media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.media-grid{grid-template-columns:1fr}}
+/* Mobile-first navigation and touch improvements */
+.mobile-menu-toggle{display:none}
+@media(max-width:650px){
+ .sidebar{padding:10px 12px;position:relative}
+ .mobile-menu-toggle{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:44px;margin-top:9px;border:1px solid var(--line);border-radius:9px;background:#13243a;color:var(--text);font-weight:700}
+ .nav{display:none;flex-direction:column;overflow:visible;gap:3px;margin-top:8px;padding:8px;background:#0d1929;border:1px solid var(--line);border-radius:10px}
+ .nav.mobile-open{display:flex}
+ .nav button{width:100%;min-height:44px;text-align:left;font-size:13px;padding:11px 12px;white-space:normal}
+ .nav .ico{display:inline-block}
+ .topbar{padding:0 12px;gap:8px}
+ .crumb{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .content{padding:16px 12px}
+ .heading{gap:12px}
+ .heading .btn,.heading .rowactions{width:100%}
+ .heading .rowactions .btn{flex:1}
+ .stats,.grid.stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .split,.discover-grid{grid-template-columns:minmax(0,1fr)}
+ .formgrid{grid-template-columns:minmax(0,1fr)}
+ .field.full{grid-column:1}
+ .cardhead{gap:10px;align-items:flex-start;flex-wrap:wrap}
+ .tablewrap{max-width:100%;overscroll-behavior-x:contain}
+ table{min-width:620px}
+ .btn{min-height:42px}
+ input,select,textarea{font-size:16px!important}
+ .hero-copy{padding:20px 15px}
+ .hero-photo{min-height:270px}
+ .video-frame{display:block;width:100%;max-width:100%}
+ .loginbox{padding:22px 18px}
+ .toast{left:12px;right:12px;bottom:12px;max-width:none}
+}
+@media(max-width:380px){.stats,.grid.stats{grid-template-columns:1fr!important}.userpill{gap:5px}.userpill .btn{padding:6px 8px!important}}
+
 </style></head><body>
 <div id="auth" class="loginwrap"><div class="loginbox"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div><div class="eyebrow">FLEET HEALTH PLATFORM</div><h1 id="authTitle">Welcome back</h1><p class="sub" id="authSub">Sign in to your vehicle intelligence workspace.</p><form id="authForm"><div class="field" id="nameField" style="display:none"><label>Full name</label><input id="name" autocomplete="name"></div><div class="field"><label>Email address</label><input id="email" type="email" required autocomplete="email" placeholder="you@company.com"></div><div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div><button class="btn primary" style="width:100%;margin-top:12px" id="authSubmit">Sign in</button></form><p class="muted" style="font-size:12px;text-align:center;margin-top:18px"><span id="authSwitchText">New to AutoGuard?</span> <a href="#" id="authSwitch" style="color:#83baff">Create account</a></p><div class="notice" id="authModeNote">Checking application mode…</div></div></div>
 <div id="app" class="shell" style="display:none">
 <aside class="sidebar"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div>
-<div><div class="navlabel">WORKSPACE</div><nav class="nav">
+<button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mainNavigation">☰ <span>Menu</span></button><div><div class="navlabel">WORKSPACE</div><nav class="nav" id="mainNavigation">
 <button class="active" data-page="overview"><span class="ico">◫</span>Overview</button><button data-page="fleet"><span class="ico">▣</span>Fleet Management</button><button data-page="engine"><span class="ico">⌁</span>EngineGuard</button><button data-page="tyres"><span class="ico">◉</span>TyreGuard Sensors</button><button data-page="images"><span class="ico">▧</span>Tyre Image Check</button><button data-page="datalab"><span class="ico">⇧</span>Data Lab</button><button data-page="assistant"><span class="ico">✦</span>AI Mechanic</button><button data-page="service-log"><span class="ico">▤</span>Service History</button><button data-page="reports"><span class="ico">▧</span>Health Reports</button><button data-page="alerts"><span class="ico">◉</span>Alerts & Reminders</button><button data-page="insights"><span class="ico">▥</span>Fleet Insights</button><button data-page="maintenance"><span class="ico">⚒</span>Maintenance</button><button data-page="discover"><span class="ico">⌖</span>Find a Mechanic & Learn</button><button data-page="analytics"><span class="ico">▥</span>Analytics & Method</button></nav></div>
 <div class="sidebottom"><b style="color:#d5e4f7">SYSTEM STATUS</b><p style="margin:8px 0 0"><span class="status green" id="systemMode"><i class="dot"></i>Connecting…</span></p><p style="margin:8px 0 0" id="systemModeNote">Checking data storage</p></div></aside>
 <main class="main"><header class="topbar"><div class="crumb">Workspace <span style="color:#526984"> / </span><strong id="crumb">Overview</strong></div><div class="userpill"><div class="avatar" id="avatar">U</div><span id="userName">Operator</span><button class="btn ghost" id="logout" style="padding:7px 10px">Sign out</button></div></header>
@@ -382,6 +414,8 @@ $('#csvForm').onsubmit=async e=>{e.preventDefault();let f=$('#csvFile').files[0]
 async function loadOrders(){try{let o=await api('/api/work-orders');$('#orderList').innerHTML=o.length?o.map(x=>`<div class="activity"><div class="activityicon">⚒</div><div style="flex:1"><b>${esc(x.title)}</b><small>${esc(x.registration||'Unassigned')} · ${esc(x.priority)} priority · ${esc(x.status)}</small><div class="rowactions" style="margin-top:7px"><select aria-label="Update status" onchange="updateOrder(${x.id},this.value)" style="background:#0b1422;color:#dbe7f7;border:1px solid var(--line);padding:5px;border-radius:6px;font-size:11px"><option ${x.status==='Open'?'selected':''}>Open</option><option ${x.status==='In progress'?'selected':''}>In progress</option><option ${x.status==='Completed'?'selected':''}>Completed</option></select></div></div></div>`).join(''):'<div class="empty">No work orders yet. Create an action to start tracking.</div>'}catch(e){toast(e.message)}}
 window.updateOrder=async(id,status)=>{try{await api(`/api/work-orders/${id}?status=${encodeURIComponent(status)}`,{method:'PATCH'});toast('Work order updated');loadOrders();loadSummary()}catch(e){toast(e.message)}};
 
+$('#mobileMenuToggle').onclick=()=>{const nav=$('#mainNavigation');const opened=nav.classList.toggle('mobile-open');$('#mobileMenuToggle').setAttribute('aria-expanded',String(opened));$('#mobileMenuToggle').innerHTML=opened?'✕ <span>Close menu</span>':'☰ <span>Menu</span>';};
+document.querySelectorAll('.nav button[data-page]').forEach(button=>button.addEventListener('click',()=>{if(window.matchMedia('(max-width:650px)').matches){$('#mainNavigation').classList.remove('mobile-open');$('#mobileMenuToggle').setAttribute('aria-expanded','false');$('#mobileMenuToggle').innerHTML='☰ <span>Menu</span>';}}));
 $('#mechanicSearch').onsubmit=e=>{e.preventDefault();const place=$('#mechanicLocation').value.trim();const service=$('#mechanicService').value;if(!place){toast('Enter a city, area or PIN code');return;}const q=service+' near '+place;const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);window.open(url,'_blank','noopener');};
 $('#generalGarageLink').onclick=e=>{const place=$('#mechanicLocation').value.trim();if(place){e.preventDefault();window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('car repair workshop near '+place),'_blank','noopener');}};
 $('#roadsideLink').onclick=e=>{const place=$('#mechanicLocation').value.trim();if(place){e.preventDefault();window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('roadside assistance towing near '+place),'_blank','noopener');}};
