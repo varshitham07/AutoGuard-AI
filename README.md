@@ -10,7 +10,7 @@ AutoGuard AI is a working software MVP with a browser interface and a FastAPI ba
 
 Open: https://varshitham07.github.io/AutoGuard-AI/
 
-GitHub Pages only hosts static files. This public preview therefore uses browser-local demo storage; its accounts and records are not shared across browsers or devices. It is not the full multi-user backend deployment.
+GitHub Pages only hosts static files. The preview supports a browser-local demonstration flow for fleet vehicles, tyre screening, work orders, service history, reports, alerts and basic built-in assistant guidance. Its demo account and records stay in that browser only, are not secure multi-user authentication and are not shared across browsers or devices. Generative AI and the trained Scania model require the local FastAPI backend.
 
 ### Full working application (Windows)
 
@@ -20,7 +20,7 @@ GitHub Pages only hosts static files. This public preview therefore uses browser
 4. Wait for the server to start and open `http://127.0.0.1:8000`.
 5. Create an account and use the fleet, tyre screening and maintenance modules.
 
-The local website connects to the FastAPI backend and stores accounts, vehicles, work orders and tyre screening history in the local SQLite database file. Keep the server terminal open while using the website. The interface displays whether it is running in backend mode or browser-preview mode.
+The local website connects to the FastAPI backend and stores accounts, vehicles, work orders, tyre screening history and service records in the local SQLite database file. Keep the server terminal open while using the website. The Windows launcher creates and keeps a local signing secret in `.autoguard_secret` so saved browser sessions remain valid between restarts. The interface displays whether it is running in backend mode or browser-preview mode.
 
 Manual setup:
 ```bash
@@ -36,7 +36,7 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 
 ## Working capabilities
 
-- AI Mechanic assistant endpoint and chat interface. In local mode it can explain a limited set of common symptoms and retrieve the signed-in owner's saved work orders and tyre checks. For full generative conversations, configure an optional OpenAI API key on the backend; see [AI assistant setup](docs/AI_ASSISTANT.md).
+- AI Mechanic assistant endpoint and chat interface. In local mode it can explain a limited set of common symptoms and retrieve the signed-in owner's saved work orders, service records and tyre checks. The GitHub Pages preview uses a separate limited browser-local guidance fallback. For full generative conversations, configure an optional OpenAI API key on the backend; see [AI assistant setup](docs/AI_ASSISTANT.md).
 
 - Account registration and login with PBKDF2 password hashing and signed expiring bearer tokens.
 - Fleet vehicle create, list and delete.
