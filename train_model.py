@@ -105,6 +105,7 @@ def main() -> None:
         "split": "stratified 80/20 hold-out; random_state=42",
         "model": "median imputation + HistGradientBoostingClassifier",
         "threshold": threshold,
+        "score_interpretation": "Class-weighted model score used for ranking and cost-sensitive thresholding; not a calibrated real-world failure probability.",
         "validation": {
             "precision": float(precision_score(y_valid, predictions, zero_division=0)),
             "recall": float(recall_score(y_valid, predictions, zero_division=0)),
