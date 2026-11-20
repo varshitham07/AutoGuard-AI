@@ -30,7 +30,70 @@
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let token=localStorage.getItem('ag_token'), user=null, registerMode=false;
-async function api(path,opts={}){opts.headers=opts.headers||{};if(token)opts.headers.Authorization='Bearer '+token;if(opts.body && !(opts.body instanceof FormData)){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(opts.body)}let r=await fetch(path,opts);let d=await r.json().catch(()=>({detail:'Unexpected server response'}));if(!r.ok)throw Error(d.detail||'Request failed');return d}
+
+// GitHub Pages demo mode: browser-local data only; no backend or server authentication.
+const DEMO_KEY='ag_browser_demo_v1';
+function demoStore(){try{return JSON.parse(localStorage.getItem(DEMO_KEY))||{user:null,vehicles:[],orders:[],nextVehicleId:1,nextOrderId:1}}catch(_){return {user:null,vehicles:[],orders:[],nextVehicleId:1,nextOrderId:1}}}
+function saveDemo(d){localStorage.setItem(DEMO_KEY,JSON.stringify(d))}
+function demoRequireUser(d){if(!d.user||!token)throw Error('Please create a demo account or sign in');return d.user}
+async function api(path,opts={}){
+ const method=(opts.method||'GET').toUpperCase(), body=opts.body||{}, d=demoStore();
+ if(path==='/api/auth/register'&&method==='POST'){
+  if(!body.name||body.name.trim().length<2)throw Error('Enter your full name');
+  if(!body.email||!body.email.includes('@'))throw Error('Enter a valid email address');
+  if(!body.password||body.password.length<8)throw Error('Password must contain at least 8 characters');
+  if(d.user&&d.user.email.toLowerCase()===body.email.trim().toLowerCase())throw Error('This email already has a demo account in this browser');
+  d.user={id:1,name:body.name.trim(),email:body.email.trim().toLowerCase(),role:'admin'};saveDemo(d);return {access_token:'browser-demo-session',token_type:'bearer',user:d.user};
+ }
+ if(path==='/api/auth/login'&&method==='POST'){
+  if(!d.user||d.user.email.toLowerCase()!==String(body.email||'').trim().toLowerCase())throw Error('No matching demo account in this browser. Create a workspace first.');
+  if(!body.password||body.password.length<8)throw Error('Enter the password you used for this demo session');
+  return {access_token:'browser-demo-session',token_type:'bearer',user:d.user};
+ }
+ if(path==='/api/auth/me'){demoRequireUser(d);return {user:d.user}}
+ demoRequireUser(d);
+ if(path==='/api/dashboard/summary'){
+  const recent=d.orders.slice().sort((a,b)=>b.id-a.id).slice(0,5);
+  return {vehicles:d.vehicles.length,open_work_orders:d.orders.filter(x=>x.status!=='Completed').length,model_status:'Validation pending',recent_work_orders:recent};
+ }
+ if(path==='/api/vehicles'&&method==='GET')return d.vehicles.slice().sort((a,b)=>b.id-a.id);
+ if(path==='/api/vehicles'&&method==='POST'){
+  if(d.vehicles.some(x=>x.registration.toUpperCase()===String(body.registration||'').toUpperCase()))throw Error('Registration number already exists');
+  const row={id:d.nextVehicleId++,vehicle_name:body.vehicle_name,registration:String(body.registration||'').toUpperCase(),vehicle_type:body.vehicle_type,make_model:body.make_model||'',odometer:Number(body.odometer||0)};
+  d.vehicles.push(row);saveDemo(d);return row;
+ }
+ const del=path.match(/^\/api\/vehicles\/(\d+)$/);
+ if(del&&method==='DELETE'){const id=Number(del[1]);d.vehicles=d.vehicles.filter(x=>x.id!==id);d.orders=d.orders.filter(x=>x.vehicle_id!==id);saveDemo(d);return {deleted:true}}
+ if(path==='/api/tyres/screen'&&method==='POST'){
+  const flags=[],recommendations=[];
+  if(body.manufacturer_min_psi!=null&&body.pressure_psi<body.manufacturer_min_psi){flags.push('Pressure below supplied manufacturer minimum');recommendations.push('Arrange a safe pressure check and inspect for leakage.')}
+  if(body.manufacturer_max_psi!=null&&body.pressure_psi>body.manufacturer_max_psi){flags.push('Pressure above supplied manufacturer maximum');recommendations.push('Verify pressure against the tyre/vehicle specification.')}
+  if(body.temperature_c>=90){flags.push('High tyre temperature indicator (demonstration threshold)');recommendations.push('Stop in a safe location and arrange an inspection; check load, speed and tyre condition.')}
+  else if(body.temperature_c>=70){flags.push('Elevated tyre temperature indicator (demonstration threshold)');recommendations.push('Monitor temperature trend and inspect if it persists.')}
+  if(body.pressure_psi<=0)flags.push('Invalid pressure reading');
+  if(!flags.length)recommendations.push('Continue routine monitoring and compare with vehicle-specific manufacturer guidance.');
+  return {status:flags.length?'Inspection required':'No rule-based warning',flags,recommendations,evidence:{tyre_position:body.tyre_position,pressure_psi:body.pressure_psi,temperature_c:body.temperature_c,speed_kmh:body.speed_kmh},method:'Transparent rule-based screening',disclaimer:'Demonstration thresholds are not universal safety limits. Configure using OEM and tyre-maker specifications. This screening cannot predict or rule out sudden tyre failure.'};
+ }
+ if(path==='/api/data/preview'&&method==='POST'){
+  const file=opts.body instanceof FormData?opts.body.get('file'):null;if(!file)throw Error('Choose a CSV file first');
+  if(!file.name.toLowerCase().endsWith('.csv'))throw Error('Please upload a CSV file');
+  if(file.size>8*1024*1024)throw Error('CSV must be smaller than 8 MB');
+  const raw=await file.text(), lines=raw.replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean);
+  if(!lines.length)throw Error('CSV file is empty');
+  const parseLine=line=>{const out=[];let v='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'&&q){v+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){out.push(v);v=''}else v+=c}out.push(v);return out};
+  const columns=parseLine(lines[0]),preview=lines.slice(1,7).map(line=>{const cells=parseLine(line),o={};columns.forEach((c,i)=>o[c]=cells[i]??'');return o});
+  return {filename:file.name,row_count:Math.max(0,lines.length-1),columns,preview,size_bytes:file.size,status:'Parsed successfully',note:'This is a schema and preview check. No failure labels or predictive model are inferred.'};
+ }
+ if(path==='/api/work-orders'&&method==='GET')return d.orders.slice().sort((a,b)=>b.id-a.id).map(o=>({...o,registration:d.vehicles.find(v=>v.id===o.vehicle_id)?.registration||null}));
+ if(path==='/api/work-orders'&&method==='POST'){
+  if(!body.title||body.title.trim().length<3)throw Error('Enter a work-order title');
+  const row={id:d.nextOrderId++,vehicle_id:body.vehicle_id||null,title:body.title.trim(),priority:body.priority||'Medium',description:body.description||'',status:'Open'};
+  d.orders.push(row);saveDemo(d);return row;
+ }
+ const patch=path.match(/^\/api\/work-orders\/(\d+)\?status=(.+)$/);
+ if(patch&&method==='PATCH'){const o=d.orders.find(x=>x.id===Number(patch[1]));if(!o)throw Error('Work order not found');o.status=decodeURIComponent(patch[2]);saveDemo(d);return {updated:true,status:o.status}}
+ throw Error('This action is not available in browser demo mode');
+}
 function toast(s){let t=$('#toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',3000)}
 function showAuth(){ $('#auth').style.display='grid';$('#app').style.display='none'; }
 function showApp(){ $('#auth').style.display='none';$('#app').style.display='flex';$('#userName').textContent=user.name;$('#avatar').textContent=user.name[0].toUpperCase();refreshAll();}
