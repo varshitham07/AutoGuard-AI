@@ -37,7 +37,23 @@ function demoStore(){try{return JSON.parse(localStorage.getItem(DEMO_KEY))||{use
 function saveDemo(d){localStorage.setItem(DEMO_KEY,JSON.stringify(d))}
 function demoRequireUser(d){if(!d.user||!token)throw Error('Please create a demo account or sign in');return d.user}
 async function api(path,opts={}){
- const method=(opts.method||'GET').toUpperCase(), body=opts.body||{}, d=demoStore();
+ const method=(opts.method||'GET').toUpperCase();
+ // Use the real FastAPI backend when this app is served locally or from an API-enabled host.
+ // GitHub Pages is static hosting, so it uses the clearly-labelled browser demo fallback.
+ if(!location.hostname.endsWith('github.io')){
+  const headers=new Headers(opts.headers||{});
+  if(token)headers.set('Authorization','Bearer '+token);
+  let requestBody=opts.body;
+  if(requestBody && !(requestBody instanceof FormData)){
+   headers.set('Content-Type','application/json');
+   requestBody=JSON.stringify(requestBody);
+  }
+  const response=await fetch(path,{method,headers,body:requestBody});
+  const data=await response.json().catch(()=>({detail:'The server returned an unreadable response'}));
+  if(!response.ok)throw Error(data.detail||('Request failed ('+response.status+')'));
+  return data;
+ }
+ const body=opts.body||{}, d=demoStore();
  if(path==='/api/auth/register'&&method==='POST'){
   if(!body.name||body.name.trim().length<2)throw Error('Enter your full name');
   if(!body.email||!body.email.includes('@'))throw Error('Enter a valid email address');
