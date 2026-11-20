@@ -43,6 +43,8 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 - Tyre telemetry screening using transparent, configurable demonstration rules, with saved per-account screening history.
 - CSV upload, parsing checks and preview.
 - Maintenance work-order creation and status tracking.
+- Service history with parts/labour cost totals, next-service date and odometer reminders, and account-scoped records.
+- Monotonic odometer updates to support mileage-based service reminders.
 - Dashboard summary and recent maintenance activity.
 
 ## Important model and safety disclosures
@@ -56,7 +58,8 @@ Interactive API documentation: `http://127.0.0.1:8000/docs`
 ## Machine-learning setup\n\nRun `DOWNLOAD_SCANIA_DATA_WINDOWS.bat` to download the official UCI data, then run `TRAIN_AUTOGUARD_MODEL_WINDOWS.bat` to install ML dependencies and train. You can also install `requirements-ml.txt` and run `python train_model.py` manually. See [docs/MODEL_TRAINING.md](docs/MODEL_TRAINING.md) for the complete steps and limitations.\n\n## API routes
 
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `GET/POST/DELETE /api/vehicles`
+- `GET/POST/DELETE /api/vehicles`; `PATCH /api/vehicles/{vehicle_id}/odometer`
+- `GET/POST /api/service-records`
 - `POST /api/tyres/screen`, `GET /api/tyres/history`\n- `GET /api/model/status`, `POST /api/model/predict`, `GET /api/model/history`
 - `POST /api/assistant/chat` (owner-scoped vehicle and maintenance context)
 - `POST /api/data/preview`
