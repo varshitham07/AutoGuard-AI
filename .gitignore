@@ -24,3 +24,6 @@ Thumbs.db
 app/models/*.joblib
 app/models/metrics.json
 data/raw/
+
+# Auto-generated local signing secret
+.autoguard_secret
