@@ -4,9 +4,8 @@ AutoGuard AI includes a reproducible training pipeline for the official **UCI AP
 
 ## 1. Obtain the real dataset
 
-1. Open the [official UCI dataset page](https://archive.ics.uci.edu/dataset/421/aps+failure+at+scania+trucks).
-2. Download the dataset archive and extract `aps_failure_training_set.csv`.
-3. Place the CSV at `data/raw/aps_failure_training_set.csv`.
+1. Double-click `DOWNLOAD_SCANIA_DATA_WINDOWS.bat` on Windows. It downloads and extracts the official archive.
+2. Alternatively, use the [official UCI dataset page](https://archive.ics.uci.edu/dataset/421/aps+failure+at+scania+trucks) and place `aps_failure_training_set.csv` at `data/raw/aps_failure_training_set.csv`.
 
 Do not create substitute rows or rename columns. The original target column must be `class`, with labels `neg` and `pos`. Keep the raw data out of Git because it is a large source file.
 
