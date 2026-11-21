@@ -263,7 +263,7 @@ def screen_tyre(body:ScreenIn,user=Depends(current_user)):
     if body.temperature_c >= 90:
         flags.append("High tyre temperature indicator (demonstration threshold)"); advice.append("Stop in a safe location and arrange an inspection; check load, speed and tyre condition.")
     elif body.temperature_c >= 70:
-        flags.append("Elevated tyre temperature indicator (demonstration threshold)"); advice.append("Monitor temperature trend and inspect if it persists.")
+        flags.append("Elevated tyre temperature indicator (demonstration threshold)"); advice.append("Recheck after safely stopping and arrange inspection if elevated temperature persists.")
     if body.pressure_psi <= 0: flags.append("Invalid pressure reading")
     status = "Inspection required" if flags else "No rule-based warning"
     if not flags: advice.append("Continue routine monitoring and compare with vehicle-specific manufacturer guidance.")
