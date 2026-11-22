@@ -71,3 +71,10 @@ The user reported that buttons were not working and the website felt difficult t
 - JavaScript syntax check is required after deployment.
 - Test the demo entry, page navigation, form submission, sample-data loader, and mobile menu in the published site.
 - This is a usability fix; it does not turn the prototype into a certified vehicle diagnostic or live telemetry system.
+
+
+## Final interaction and responsive repair (22 Nov 2026)
+- Fixed navigation loops that used `querySelector()` as though it returned a collection. Navigation now iterates with `querySelectorAll()`, allowing page links and section changes to run.
+- Corrected button semantics: all action buttons default to `type="button"`; only each form's primary action is set to `type="submit"`. This prevents secondary buttons (such as demo exploration or refresh actions) from accidentally submitting a form.
+- Added a final responsive pass for the mobile menu, stacked content, touch-sized controls, full-width form fields, and horizontally scrollable data tables without forcing the whole page off-screen.
+- No new product features or model claims were added.

@@ -332,6 +332,28 @@ html{color-scheme:light;scroll-behavior:smooth}body{background:var(--bg);color:v
 @media(max-width:950px){.sidebar{width:225px}.content{padding:24px}}@media(max-width:650px){.sidebar{background:#172638;padding:12px}.nav-search{margin-top:8px}.topbar{background:#fff;padding:0 14px}.content{padding:16px 12px}.heading h1{font-size:25px}.hero-photo{min-height:280px}.hero-copy{padding:22px 16px}.navgroup{min-height:42px}.userpill .btn{min-height:40px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
 
+
+/* Final responsive and interaction repair — keep controls usable at every width. */
+html,body{max-width:100%;overflow-x:hidden}.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;overscroll-behavior:contain}
+.main,.content,.section,.section.active{min-width:0;max-width:100%}.heading{flex-wrap:wrap}.rowactions{flex-wrap:wrap;align-items:center}
+.btn{min-width:44px;min-height:44px;white-space:normal;line-height:1.35}button,[role="button"]{touch-action:manipulation}
+@media(max-width:950px){.sidebar{width:230px}.content{padding:22px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:650px){
+ .shell{display:flex;flex-direction:column;width:100%;min-width:0}.sidebar{position:relative;top:auto;height:auto;width:100%;max-height:none;overflow:visible;padding:12px}
+ .brand{width:100%;min-width:0}.mobile-menu-toggle{display:flex!important;width:100%;min-height:46px;align-items:center;justify-content:center;gap:10px}
+ .nav{display:none!important;width:100%;max-width:100%;flex-direction:column;overflow:visible;margin:9px 0 0;padding:9px;gap:4px}.nav.mobile-open{display:flex!important}
+ .nav-search{width:100%;min-height:44px;font-size:16px}.nav button{width:100%;min-height:46px;white-space:normal;text-align:left}.navgroup{width:100%;min-height:44px}
+ .main{width:100%;min-width:0}.topbar{position:relative;height:auto;min-height:54px;width:100%;padding:9px 12px;gap:8px}
+ .content{width:100%;padding:16px 12px;margin:0}.heading{display:flex;flex-direction:column;align-items:stretch;gap:12px}.heading>div{width:100%;min-width:0}
+ .heading .btn,.heading .rowactions{width:100%}.heading .rowactions .btn{flex:1 1 130px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+ .grid,.split,.modulegrid,.discover-grid,.media-grid,.formgrid{grid-template-columns:minmax(0,1fr)!important;width:100%;min-width:0}.field.full{grid-column:1/-1}
+ .card,.result,.notice,.hero-photo,.demo-flow{width:100%;min-width:0;max-width:100%;overflow-wrap:anywhere}.rowactions>.btn,.rowactions>button{flex:1 1 140px;max-width:100%}
+ .tablewrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.tablewrap table{width:max-content;min-width:600px;max-width:none}
+ .field input,.field select,.field textarea,input,select,textarea{width:100%;max-width:100%;min-width:0;font-size:16px!important}.image-feature{grid-template-columns:minmax(0,1fr)}.hero-copy{padding:20px 16px;width:100%}
+ .toast{left:12px;right:12px;bottom:12px;max-width:none}
+}
+@media(max-width:380px){.stats{grid-template-columns:minmax(0,1fr)!important}.content{padding-left:10px;padding-right:10px}.card{padding:12px}.heading h1{font-size:23px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
 </style><style id="ag-workflow-layout">
 .ag-overview-hero{position:relative;min-height:330px;overflow:hidden;background:#182b3c;border-radius:9px;margin:0 0 28px;color:#fff}
 .ag-overview-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 56%;opacity:.58;filter:saturate(.78)}
@@ -742,8 +764,8 @@ async function loadInsightVehicles(){try{const vs=await api('/api/vehicles'),sel
 $('#insightVehicle').onchange=loadInsights;
 $('#refreshInsights').onclick=loadInsights;
 $('#exportInsights').onclick=()=>{if(!insightExportRows.length){toast('Generate insights before exporting');return;}const csv=insightExportRows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='autoguard-fleet-insights.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);};
-function go(page){const target=$('#page-'+page);if(!target)return;$('.section').forEach(x=>x.classList.remove('active'));target.classList.add('active');$('.nav button[data-page]').forEach(x=>{const current=x.dataset.page===page;x.classList.toggle('active',current);if(current)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});const navItem=$(`[data-page="${page}"]`);$('#crumb').textContent=navItem?navItem.textContent.trim():target.querySelector('h1')?.textContent.trim()||'Workspace';document.title=(target.querySelector('h1')?.textContent.trim()||'Workspace')+' | AutoGuard AI';$('#mainContent').focus({preventScroll:true});window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});if(page==='fleet'||page==='tyres'||page==='maintenance')loadVehicles();if(page==='maintenance')loadOrders();if(page==='service-log')loadServiceRecords();if(page==='reports')loadReportVehicles();if(page==='alerts')loadAlerts();if(page==='insights')loadInsightVehicles()}
-$('.nav button[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function go(page){const target=$('#page-'+page);if(!target)return;$$('.section').forEach(x=>x.classList.remove('active'));target.classList.add('active');$$('.nav button[data-page]').forEach(x=>{const current=x.dataset.page===page;x.classList.toggle('active',current);if(current)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});const navItem=$(`[data-page="${page}"]`);$('#crumb').textContent=navItem?navItem.textContent.trim():target.querySelector('h1')?.textContent.trim()||'Workspace';document.title=(target.querySelector('h1')?.textContent.trim()||'Workspace')+' | AutoGuard AI';$('#mainContent').focus({preventScroll:true});window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});if(page==='fleet'||page==='tyres'||page==='maintenance')loadVehicles();if(page==='maintenance')loadOrders();if(page==='service-log')loadServiceRecords();if(page==='reports')loadReportVehicles();if(page==='alerts')loadAlerts();if(page==='insights')loadInsightVehicles()}
+$$('.nav button[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));
 function setModeLabels(){const backend=!location.hostname.endsWith('github.io');$('#authModeNote').textContent=backend?'Connected to the AutoGuard API. Accounts and records are stored by the backend database.':'Browser preview: account and records stay in this browser only. This is not secure multi-user authentication.';$('#systemMode').innerHTML='<i class="dot"></i>'+(backend?'Backend mode':'Browser demo mode');$('#systemModeNote').textContent=backend?'FastAPI + SQLite database':'Local browser storage';}
 async function loadReportVehicles(){try{const rows=await api('/api/vehicles');const sel=$('#reportVehicle');const prior=sel.value;sel.innerHTML='<option value="">Choose a vehicle</option>'+rows.map(v=>'<option value="'+v.id+'">'+esc(v.vehicle_name)+' · '+esc(v.registration)+'</option>').join('');if(prior)sel.value=prior;}catch(e){$('#reportPreview').innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
 async function loadSampleWorkspace(){
@@ -785,8 +807,9 @@ async function loadOrders(){try{let o=await api('/api/work-orders');$('#orderLis
 window.updateOrder=async(id,status)=>{try{await api(`/api/work-orders/${id}?status=${encodeURIComponent(status)}`,{method:'PATCH'});toast('Work order updated');loadOrders();loadSummary()}catch(e){toast(e.message)}};
 
 
-// Give every non-explicit button a predictable type so it cannot accidentally submit a nearby form.
- document.querySelectorAll('button:not([type])').forEach(button=>{button.type=button.closest('form')?'submit':'button';});
+// Default every button to an action button. Only the primary action in each form submits it.
+ document.querySelectorAll('button:not([type])').forEach(button=>{button.type='button';});
+ ['authForm','vehicleForm','apsPredictForm','tyreForm','csvForm','orderForm','assistantForm','serviceForm','mechanicSearch'].forEach(id=>{const form=document.getElementById(id);const submit=form?.querySelector('.btn.primary');if(submit)submit.type='submit';});
 // Accessible navigation: quick section search and collapsible navigation groups.
 const navSearch=document.getElementById('navSearch');
 function applyNavSearch(){const q=(navSearch?.value||'').trim().toLowerCase();document.querySelectorAll('#mainNavigation .navgroup').forEach(g=>{let n=g.nextElementSibling,has=false;const collapsed=g.getAttribute('aria-expanded')==='false';while(n&&!n.classList.contains('navgroup')){if(n.matches('[data-page]')){const match=!q||n.textContent.toLowerCase().includes(q);n.hidden=!match||(!q&&collapsed);if(match)has=true;}n=n.nextElementSibling;}g.hidden=!!q&&!has;});}
