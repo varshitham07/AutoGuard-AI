@@ -331,6 +331,104 @@ html{color-scheme:light;scroll-behavior:smooth}body{background:var(--bg);color:v
 .navgroup{width:100%;text-align:left;background:transparent;border:0;padding:10px 8px 5px;margin:7px 0 2px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;line-height:1.4;letter-spacing:1.1px;display:flex;align-items:center;justify-content:space-between}.navgroup:after{content:"−";font-size:15px}.navgroup.collapsed:after{content:"+"}.nav button[hidden],.navgroup[hidden]{display:none!important}
 @media(max-width:950px){.sidebar{width:225px}.content{padding:24px}}@media(max-width:650px){.sidebar{background:#172638;padding:12px}.nav-search{margin-top:8px}.topbar{background:#fff;padding:0 14px}.content{padding:16px 12px}.heading h1{font-size:25px}.hero-photo{min-height:280px}.hero-copy{padding:22px 16px}.navgroup{min-height:42px}.userpill .btn{min-height:40px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* AUTOGUARD // DESIGN SYSTEM V2 — premium fleet operations */
+:root{
+ --bg:#0b0c0d;--panel:#151719;--panel2:#1d2022;--line:#33383b;
+ --text:#f5f4f1;--muted:#a0a4a6;--blue:#d9d7d2;--cyan:#d9d7d2;
+ --green:#8fc7a0;--amber:#e5b45e;--red:#e77f84;
+ --ag-accent:#d9a441;--ag-accent-soft:#382b17;
+}
+body{
+ background:
+  radial-gradient(ellipse at 82% 0%,rgba(217,164,65,.075),transparent 27%),
+  linear-gradient(135deg,#0b0c0d 0%,#101213 55%,#0b0c0d 100%);
+ color:var(--text);letter-spacing:.005em;
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.12;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+.shell,.loginwrap{position:relative;z-index:1}
+.sidebar{width:258px;background:rgba(8,9,10,.96);border-right:1px solid #292d2f;padding:26px 17px;gap:27px}
+.brand{padding:4px 7px 16px;border-bottom:1px solid #292d2f}
+.brandmark{width:42px;height:42px;background:var(--ag-accent);color:#14110a;border-radius:3px;font-size:22px}
+.brand b{font-size:15px;letter-spacing:2px;font-weight:800}
+.brand small{font-size:9px;letter-spacing:2.2px;color:#929496}
+.navlabel{font-size:9px;color:#777d80;letter-spacing:2.1px;padding:0 11px 7px}
+.nav button{border-radius:3px;padding:12px 12px;color:#aeb1b2;font-size:12px;letter-spacing:.01em;position:relative}
+.nav button.active{background:#242729;color:#fff;border-left:2px solid var(--ag-accent);padding-left:10px}
+.nav button.active .ico{color:var(--ag-accent)}
+.nav button:hover{background:#1b1e20;color:#fff}
+.nav .ico{color:#8b9092;font-size:14px}
+.sidebottom{border-radius:3px;background:#111314;border-color:#2d3133;padding:15px}
+.topbar{height:68px;background:rgba(13,14,15,.97);border-color:#292d2f;padding:0 38px}
+.crumb{font-size:12px;color:#818587}.crumb strong{font-weight:600}
+.userpill{font-size:12px}.avatar{border-radius:3px;background:#34302a;color:#e7b65c}
+.content{max-width:1560px;padding:34px 38px}
+.heading{margin-bottom:28px;align-items:center}
+.heading h1{font-size:clamp(26px,2.4vw,34px);font-weight:650;letter-spacing:-1.1px;margin:7px 0 6px}
+.eyebrow{color:var(--ag-accent);font-size:9px;letter-spacing:2.4px;font-weight:800}
+.sub{font-size:13px;max-width:720px;color:#9fa3a5}
+.btn{border-radius:3px;min-height:40px;padding:10px 16px;font-size:12px;letter-spacing:.015em;background:#242729;border-color:#454a4d}
+.btn.primary{background:var(--ag-accent);border-color:var(--ag-accent);color:#17130b;font-weight:800}
+.btn.primary:hover{background:#efbd63}
+.btn.ghost{background:transparent;border-color:#414648}
+.btn:hover{background:#34383a}
+.card{background:linear-gradient(145deg,#191c1e 0%,#141617 100%);border:1px solid #303537;border-radius:5px;padding:21px;box-shadow:0 9px 28px rgba(0,0,0,.12)}
+.card:hover{transform:translateY(-1px);border-color:#555044;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.cardhead{padding-bottom:13px;border-bottom:1px solid #2c3032;margin-bottom:12px}
+.cardhead h3{font-size:13px;font-weight:700;letter-spacing:.01em}
+.stats{gap:12px}
+.stats .card{position:relative;overflow:hidden;min-height:128px;padding:20px 21px}
+.stats .card:before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:var(--ag-accent);opacity:.75}
+.statlabel{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:#9b9fa1}
+.statvalue{font-size:34px;font-weight:650;letter-spacing:-1.5px;margin:12px 0 5px}
+.statfoot{font-size:10px;color:#7f8587}
+.status{border-radius:3px;padding:5px 8px;font-size:9px;letter-spacing:.05em;text-transform:uppercase}
+.status.green{background:#182b20;color:#9bd6ad}.status.amber{background:#302516;color:#edc16e}.status.red{background:#321d20;color:#f29a9f}.status.blue{background:#202426;color:#d2d4d5}
+.activity{border-color:#292e30;padding:14px 0}
+.activityicon{border-radius:3px;background:#272a2b;color:var(--ag-accent)}
+table{border-spacing:0}
+th{background:#111314;color:#858b8d;font-size:9px;letter-spacing:1.3px;padding:13px}
+td{padding:14px 12px;border-bottom:1px solid #282c2e;color:#d1d3d3}
+tbody tr:hover{background:#1e2122}
+.field label{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#aeb2b3}
+.field input,.field select,.field textarea{background:#0e1011;border:1px solid #353a3c;border-radius:3px;padding:12px;color:#f2f2ef}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ag-accent);box-shadow:0 0 0 2px rgba(217,164,65,.12)}
+.notice{border-radius:3px;background:#202426;border-color:#45494a;color:#c5c8c8}
+.notice.warn{background:#302516;border-color:#6b5128;color:#edc16e}
+.result{background:#101213;border-color:#363a3c;border-radius:4px}
+.hero-photo,.mechanic-hero{border-radius:5px;border-color:#383b3d}
+.hero-photo{min-height:250px;margin-bottom:20px}
+.hero-photo:after{background:linear-gradient(90deg,#090b0ceF 0%,#090b0cdb 43%,#090b0c30 100%)}
+.hero-copy{padding:34px 36px}
+.hero-copy h2{font-size:clamp(27px,3.4vw,42px);font-weight:650;letter-spacing:-1.5px;max-width:560px}
+.hero-copy p{font-size:13px;color:#c2c4c4}
+.hero-tags span{border-radius:3px;background:#181b1c;border-color:#414648;color:#d0d2d2;letter-spacing:.04em}
+.image-feature{border-radius:5px}
+.module{border-radius:5px}
+.module .bigico{color:var(--ag-accent)}
+.progress{background:#2a2e30;border-radius:2px}.progress span{background:var(--ag-accent)}
+.loginbox{border-radius:5px;background:#151718;border-color:#34383a;box-shadow:0 30px 90px #0008}
+.loginbox h1{font-size:29px;letter-spacing:-1px}
+.toast{border-radius:3px;background:#182b20;border-color:#365a43}
+.demo-flow{background:#17191a;border-color:#393d3f;border-radius:5px}
+@media(max-width:950px){.sidebar{width:220px}.topbar{padding:0 24px}.content{padding:26px 24px}}
+@media(max-width:650px){
+ .sidebar{padding:12px 13px;background:#090a0a}
+ .brand{border:0;padding:2px 4px 8px}
+ .nav{border-radius:3px;background:#111314;border-color:#303436}
+ .nav button{border-radius:3px}
+ .topbar{padding:0 14px;height:58px}
+ .content{padding:19px 13px}
+ .heading h1{font-size:27px}
+ .hero-photo{min-height:290px}
+ .hero-copy{padding:24px 17px}
+ .hero-copy h2{font-size:30px}
+ .stats .card{min-height:112px;padding:16px}
+ .statvalue{font-size:29px}
+ .card{padding:15px}
+}
+@media(prefers-reduced-motion:reduce){body:before{display:none}}
+
 </style></head><body><a class="skip-link" href="#mainContent">Skip to main content</a>
 <div id="auth" class="loginwrap"><div class="loginbox"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div><div class="eyebrow">FLEET HEALTH PLATFORM</div><h1 id="authTitle">Welcome back</h1><p class="sub" id="authSub">Sign in to your vehicle intelligence workspace.</p><form id="authForm"><div class="field" id="nameField" style="display:none"><label>Full name</label><input id="name" autocomplete="name"></div><div class="field"><label>Email address</label><input id="email" type="email" required autocomplete="email" placeholder="you@company.com"></div><div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div><button class="btn primary" style="width:100%;margin-top:12px" id="authSubmit">Sign in</button></form><p class="muted" style="font-size:12px;text-align:center;margin-top:18px"><span id="authSwitchText">New to AutoGuard?</span> <a href="#" id="authSwitch" style="color:#83baff">Create account</a></p><div class="notice" id="authModeNote">Checking application mode…</div></div></div>
 <div id="app" class="shell" style="display:none">
