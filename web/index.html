@@ -212,16 +212,112 @@ tr:hover td{background:#202122}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 .section.active .heading,.section.active .card{animation:none!important}
 .brandmark{animation:none!important}
+
+/* Enterprise fleet-operations UI refresh */
+:root{--bg:#f3f5f7;--panel:#fff;--panel2:#f8fafb;--line:#e1e6eb;--text:#182433;--muted:#687686;--blue:#244b70;--cyan:#477d83;--green:#347653;--amber:#986a25;--red:#a33e45}
+html{color-scheme:light}
+body{background:#f3f5f7;color:#182433;font-family:Inter,"Segoe UI",Arial,sans-serif;line-height:1.55}
+.shell,.main{background:#f3f5f7}
+.sidebar{width:252px;background:#172638;border-right:1px solid #25384a;padding:25px 17px;gap:23px;box-shadow:none}
+.brand{padding:5px 9px 17px;border-bottom:1px solid #2b3b4d}
+.brandmark{background:#f5f7f9;color:#172638;border-radius:7px;font-size:19px;box-shadow:none;animation:none}
+.brand b{font-size:14px;letter-spacing:1.25px;color:#f5f7f9}
+.brand small{font-size:9px;letter-spacing:1.5px;color:#a9b7c5}
+.navlabel{color:#91a1b1;font-size:9px;letter-spacing:1.6px;font-weight:750;margin:0 0 7px;padding:0 11px}
+.navgroup{padding-top:13px;margin-bottom:5px}
+.nav button{color:#c1ccd6;border-radius:5px;margin:2px 0;padding:10px 11px;font-size:12px;font-weight:550;gap:10px}
+.nav button.active,.nav button:hover{background:#293c50;color:#fff;box-shadow:none}
+.nav button.active{border-left:3px solid #dce6ee;padding-left:9px}
+.nav .ico{color:#b5c4d2;width:17px;font-size:12px}
+.sidebottom{background:#1e3043;border:1px solid #34495c;border-radius:6px;color:#aebdca}
+.sidebottom b{color:#dfe7ee!important}
+.topbar{height:66px;background:#fff;border-bottom:1px solid #e1e6eb;padding:0 34px;backdrop-filter:none}
+.crumb{color:#778493;font-size:12px}.crumb strong{color:#263646;font-weight:650}
+.userpill{color:#3c4c5c;font-size:12px}.avatar{background:#e8edf2;color:#344b60;border-radius:6px}
+.content{max-width:1510px;padding:30px 36px}
+.eyebrow{color:#627485;font-size:9px;letter-spacing:1.65px;font-weight:750}
+.heading{margin-bottom:23px}
+.heading h1{color:#172638;font-size:29px;letter-spacing:-.75px;font-weight:650}
+.sub{color:#687686;font-size:13px}
+.btn{background:#fff;border:1px solid #cbd4dc;color:#2b4054;border-radius:5px;padding:10px 15px;font-size:12px;font-weight:650;box-shadow:none}
+.btn.primary{background:#203e5b;color:#fff;border:1px solid #203e5b}
+.btn.ghost{background:#fff;border-color:#d3dbe2;color:#435567}
+.btn:hover{background:#f2f5f7;filter:none;transform:none;box-shadow:none}
+.btn.primary:hover{background:#2b506f}
+.card{background:#fff;border:1px solid #e1e6eb;border-radius:7px;padding:20px;box-shadow:0 2px 8px #1d2b3908}
+.card:hover{transform:none;border-color:#d5dde5;box-shadow:0 3px 12px #1d2b390c}
+.stats{gap:13px}
+.statlabel{font-size:11px;color:#687686;font-weight:550}
+.statvalue{font-size:30px;color:#182433;font-weight:650;letter-spacing:-.7px}
+.statfoot{font-size:10px;color:#84909c}
+.cardhead h3,.card h3{font-size:14px;color:#203244;font-weight:650}
+.status{border-radius:4px;padding:4px 7px;font-size:9px;background:#f0f3f6;color:#526477;border:1px solid #e1e6eb}
+.status.green{background:#edf5ef;color:#347653;border-color:#d6e7db}
+.status.amber{background:#fbf4e8;color:#986a25;border-color:#eee0c7}
+.status.red{background:#faeeee;color:#a33e45;border-color:#edd8da}
+.status.blue{background:#edf2f7;color:#3e607f;border-color:#dbe5ee}
+.activity{border-color:#edf0f3;gap:11px;padding:13px 0}
+.activityicon{background:#edf2f6;color:#496780;border-radius:5px}
+.activity b{font-size:12px;color:#293b4d}.activity small{color:#7b8996;font-size:10px}
+.tablewrap{border:1px solid #e3e8ed;border-radius:5px;background:#fff}
+table{background:#fff}
+th{background:#f7f9fa;color:#71808e;font-size:9px;letter-spacing:.9px;border-color:#e7ebef;padding:12px}
+td{color:#4a5a69;border-color:#edf0f3;font-size:11px;padding:13px 12px}
+td b{color:#243648;font-weight:650}
+tr:hover td{background:#f8fafb}
+.empty{color:#82909d;font-size:12px}.empty strong{color:#3c4e60}
+.field label{color:#526475;font-size:11px;font-weight:650}
+.field input,.field select,.field textarea{background:#fff;border:1px solid #d6dee5;color:#1d2c3b;border-radius:5px;padding:11px;font-size:12px}
+.field input::placeholder,.field textarea::placeholder{color:#a0abb5}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#547b9d;box-shadow:0 0 0 3px #547b9d18}
+.notice{background:#f0f4f7;border-color:#dce5ec;color:#526879;border-radius:5px;font-size:11px}
+.notice.warn{background:#fbf4e8;border-color:#ead9ba;color:#896329}
+.result{background:#f8fafb;border:1px solid #e1e6eb;border-radius:6px;color:#263746}
+.result li{color:#526475;font-size:12px}
+.progress{background:#e7ebef}.progress span{background:#526f8a}
+.hero-photo{border:1px solid #dce2e7;border-radius:8px;min-height:310px;background:#101b26}
+.hero-photo img{opacity:.42;filter:grayscale(.7) contrast(1.05)}
+.hero-photo:after{background:linear-gradient(90deg,#101b26f5 0%,#101b26d9 46%,#101b2630 100%)}
+.hero-copy{padding:34px 36px;max-width:690px}
+.hero-copy h2{font-size:clamp(31px,3.6vw,46px);line-height:1.12;letter-spacing:-1.2px;font-weight:620;color:#fff}
+.hero-copy p{color:#d3dbe2;font-size:13px;max-width:500px}
+.hero-tags span{background:#ffffff12;border-color:#ffffff30;border-radius:4px;font-size:9px;letter-spacing:.2px}
+.demo-flow{background:#fff;border-color:#e1e6eb;border-radius:7px}
+.demo-flow h3{font-size:15px;color:#223548}
+.demo-flow p{font-size:11px;color:#687686}
+.demo-flow .status{white-space:normal}
+.loginbox{background:#fff;border:1px solid #e1e6eb;border-radius:8px;box-shadow:0 18px 60px #18243312}
+.loginbox h1{color:#172638;font-weight:650}
+.toast{background:#edf5ef;border-color:#d6e7db;color:#347653;border-radius:5px}
+.nav button:focus-visible,.btn:focus-visible{outline:3px solid #6d91b2;outline-offset:2px}
+@media(max-width:950px){.sidebar{width:220px}.content{padding:24px}}
+@media(max-width:650px){
+ .sidebar{background:#172638;padding:11px 12px}
+ .brand{border-bottom:0;padding:3px 4px 7px}
+ .mobile-menu-toggle{background:#21364a;border:1px solid #3b5064;border-radius:5px;color:#eef3f7;font-size:12px}
+ .nav{background:#1b2c3e;border-color:#34485c;border-radius:6px}
+ .nav button{font-size:12px}
+ .navgroup{padding-top:10px}
+ .topbar{height:56px;background:#fff;padding:0 13px}
+ .content{padding:18px 13px}
+ .heading h1{font-size:25px}
+ .hero-photo{min-height:290px}
+ .hero-copy{padding:23px 17px}
+ .card{padding:15px}
+ .demo-flow{padding:15px}
+}
+@media(prefers-reduced-motion:reduce){.section.active .heading,.section.active .card{animation:none!important}}
+
 </style></head><body>
 <div id="auth" class="loginwrap"><div class="loginbox"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div><div class="eyebrow">FLEET HEALTH PLATFORM</div><h1 id="authTitle">Welcome back</h1><p class="sub" id="authSub">Sign in to your vehicle intelligence workspace.</p><form id="authForm"><div class="field" id="nameField" style="display:none"><label>Full name</label><input id="name" autocomplete="name"></div><div class="field"><label>Email address</label><input id="email" type="email" required autocomplete="email" placeholder="you@company.com"></div><div class="field"><label>Password</label><input id="password" type="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters"></div><button class="btn primary" style="width:100%;margin-top:12px" id="authSubmit">Sign in</button></form><p class="muted" style="font-size:12px;text-align:center;margin-top:18px"><span id="authSwitchText">New to AutoGuard?</span> <a href="#" id="authSwitch" style="color:#83baff">Create account</a></p><div class="notice" id="authModeNote">Checking application mode…</div></div></div>
 <div id="app" class="shell" style="display:none">
 <aside class="sidebar"><div class="brand"><div class="brandmark">A</div><div><b>AUTOGUARD AI</b><small>VEHICLE INTELLIGENCE</small></div></div>
 <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mainNavigation">☰ <span>Menu</span></button><div><div class="navlabel">WORKSPACE</div><nav class="nav" id="mainNavigation">
-<button class="active" data-page="overview"><span class="ico">◫</span>Overview</button><button data-page="fleet"><span class="ico">▣</span>Fleet Management</button><button data-page="engine"><span class="ico">⌁</span>EngineGuard</button><button data-page="tyres"><span class="ico">◉</span>Tyre Checks</button><button data-page="images"><span class="ico">▧</span>Tyre Photo Notes</button><button data-page="datalab"><span class="ico">⇧</span>Data Lab</button><button data-page="assistant"><span class="ico">✦</span>Mechanic Assistant</button><button data-page="service-log"><span class="ico">▤</span>Service History</button><button data-page="reports"><span class="ico">▧</span>Health Reports</button><button data-page="alerts"><span class="ico">◉</span>Alerts & Reminders</button><button data-page="insights"><span class="ico">▥</span>Fleet Insights</button><button data-page="maintenance"><span class="ico">⚒</span>Maintenance</button><button data-page="discover"><span class="ico">⌖</span>Find a Mechanic & Learn</button><button data-page="analytics"><span class="ico">▥</span>Analytics & Method</button></nav></div>
+<button class="active" data-page="overview"><span class="ico">◫</span>Overview</button><div class="navlabel navgroup">FLEET OPERATIONS</div><button data-page="fleet"><span class="ico">▣</span>Fleet Management</button><div class="navlabel navgroup">CONDITION &amp; DIAGNOSTICS</div><button data-page="engine"><span class="ico">⌁</span>EngineGuard</button><button data-page="tyres"><span class="ico">◉</span>Tyre Checks</button><button data-page="images"><span class="ico">▧</span>Tyre Photo Notes</button><button data-page="datalab"><span class="ico">⇧</span>Data Lab</button><button data-page="assistant"><span class="ico">✦</span>Mechanic Assistant</button><div class="navlabel navgroup">RECORDS &amp; REPORTING</div><button data-page="service-log"><span class="ico">▤</span>Service History</button><button data-page="reports"><span class="ico">▧</span>Health Reports</button><button data-page="alerts"><span class="ico">◉</span>Alerts & Reminders</button><button data-page="insights"><span class="ico">▥</span>Fleet Insights</button><button data-page="maintenance"><span class="ico">⚒</span>Maintenance</button><div class="navlabel navgroup">SUPPORT &amp; INSIGHTS</div><button data-page="discover"><span class="ico">⌖</span>Workshop &amp; Learning</button><button data-page="analytics"><span class="ico">▥</span>Analytics & Method</button></nav></div>
 <div class="sidebottom"><b style="color:#d5e4f7">SYSTEM STATUS</b><p style="margin:8px 0 0"><span class="status green" id="systemMode"><i class="dot"></i>Connecting…</span></p><p style="margin:8px 0 0" id="systemModeNote">Checking data storage</p></div></aside>
 <main class="main"><header class="topbar"><div class="crumb">Workspace <span style="color:#526984"> / </span><strong id="crumb">Overview</strong></div><div class="userpill"><div class="avatar" id="avatar">U</div><span id="userName">Operator</span><button class="btn ghost" id="logout" style="padding:7px 10px">Sign out</button></div></header>
 <div class="content">
-<section id="page-overview" class="section active"><div class="hero-photo"><img src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1800&q=85" alt="Modern commercial truck on the road" loading="eager"><div class="hero-copy"><div class="eyebrow">INTELLIGENT FLEET CARE</div><h2>Keep every journey<br>one step ahead.</h2><p>Bring vehicle records, condition checks and maintenance actions together in one clear workspace.</p><div class="rowactions"><button class="btn primary" onclick="go('fleet')">Explore your fleet ↗</button><button class="btn ghost" onclick="go('maintenance')">View maintenance</button></div><div class="hero-tags"><span>Fleet visibility</span><span>Condition screening</span><span>Maintenance planning</span></div></div></div><div class="heading"><div><div class="eyebrow">FLEET WORKSPACE / MAINTENANCE OPERATIONS</div><h1>Vehicle health, made actionable.</h1><p class="sub">A unified view of fleet assets, condition indicators and maintenance activity.</p></div><button class="btn primary" onclick="go('fleet')">＋ Add vehicle</button></div>
+<section id="page-overview" class="section active"><div class="hero-photo"><img src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1800&q=85" alt="Modern commercial truck on the road" loading="eager"><div class="hero-copy"><div class="eyebrow">INTELLIGENT FLEET CARE</div><h2>A clearer view of<br>vehicle reliability.</h2><p>A structured workspace for fleet records, condition screening and maintenance decisions.</p><div class="rowactions"><button class="btn primary" onclick="go('fleet')">Explore your fleet ↗</button><button class="btn ghost" onclick="go('maintenance')">View maintenance</button></div><div class="hero-tags"><span>Fleet visibility</span><span>Condition screening</span><span>Maintenance planning</span></div></div></div><div class="heading"><div><div class="eyebrow">FLEET WORKSPACE / MAINTENANCE OPERATIONS</div><h1>Fleet operations, made clearer.</h1><p class="sub">A unified view of fleet assets, condition indicators and maintenance activity.</p></div><button class="btn primary" onclick="go('fleet')">＋ Add vehicle</button></div>
 <div class="card demo-flow"><div class="demo-flow-copy"><div class="eyebrow">GUIDED PRODUCT DEMO</div><h3>See the maintenance workflow end to end</h3><p class="muted">Load clearly labelled sample records to explore a vehicle, review a condition check, create a maintenance action and generate a report. Sample data is added only to an empty fleet.</p></div><div class="demo-flow-actions"><button class="btn primary" id="loadSampleWorkspace" type="button" onclick="loadSampleWorkspace()">Load sample workspace</button><span class="status blue">Sample records · not live vehicle data</span></div></div>
 <div class="grid stats"><div class="card"><div class="statlabel">Registered vehicles</div><div class="statvalue" id="statVehicles">0</div><div class="statfoot">Assets in this workspace</div></div><div class="card"><div class="statlabel">Open work orders</div><div class="statvalue" id="statOrders">0</div><div class="statfoot">Pending maintenance actions</div></div><div class="card"><div class="statlabel">APS failure model</div><div class="statvalue" id="statModelStatus" style="font-size:18px;margin-top:16px">Checking…</div><div class="statfoot">Scania APS model readiness</div></div><div class="card"><div class="statlabel">Tyre condition screening</div><div class="statvalue" style="font-size:18px;margin-top:16px">Available</div><div class="statfoot">Transparent rule-based checks</div></div></div>
 <div class="grid split"><div class="card capability-panel"><div class="cardhead"><h3>Product capability status</h3><span class="status blue">Current scope</span></div><div class="capability-list"><div class="capability-row"><div><b>Fleet and maintenance records</b><small>Vehicle register, service history, work orders, reminders, reports and recorded-cost insights.</small></div><span class="status green">Available</span></div><div class="capability-row"><div><b>Tyre condition screening</b><small>Rule-based checks from values entered by the user; use manufacturer limits.</small></div><span class="status green">Available</span></div><div class="capability-row"><div><b>Scania APS prediction</b><small>Dataset-specific model workflow; prediction requires a trained model on the backend.</small></div><span class="status amber">Training required</span></div><div class="capability-row"><div><b>Tyre photo evidence</b><small>Image preview only. No computer-vision classification or AI tyre diagnosis.</small></div><span class="status amber">Preview only</span></div><div class="capability-row"><div><b>Mechanic assistant</b><small>Built-in guidance and saved-record lookup; full generative responses require a configured API provider.</small></div><span class="status blue">Limited mode</span></div></div><p class="muted capability-foot">Status describes implemented software capability, not measured fleet health or model accuracy.</p></div><div class="card"><div class="cardhead"><h3>Recent maintenance activity</h3><button class="btn ghost" onclick="go('maintenance')">View all</button></div><div id="recentOrders"><div class="empty">No work orders yet.</div></div></div></div>
