@@ -51,3 +51,23 @@ Related pages should provide a contextual previous/next action so users can move
 - Confirm reports, reminders, and insights load from actual stored data.
 - Check all contextual workflow buttons and navigation on desktop and mobile.
 - Confirm GitHub Pages deployment succeeds and inspect the live page at mobile width.
+
+
+# AutoGuard AI — usability and button fixes
+
+## User feedback
+The user reported that buttons were not working and the website felt difficult to access.
+
+## Changes made
+- Added an **Explore demo workspace** entry on GitHub Pages so users can open the browser demo without first creating an account.
+- The demo entry creates a local demo operator only when needed, preserves existing browser demo data, and loads clearly labelled sample records if the workspace is empty.
+- Clarified that browser demo records remain on the current device and are not secure multi-user account data.
+- Kept backend-hosted sign-in/register separate from the static GitHub Pages demo.
+- Explicitly set button types where missing to avoid accidental form submission.
+- Increased button/navigation tap targets and improved visible keyboard focus.
+- Kept mobile workflow actions readable and easier to tap.
+
+## Test status
+- JavaScript syntax check is required after deployment.
+- Test the demo entry, page navigation, form submission, sample-data loader, and mobile menu in the published site.
+- This is a usability fix; it does not turn the prototype into a certified vehicle diagnostic or live telemetry system.
